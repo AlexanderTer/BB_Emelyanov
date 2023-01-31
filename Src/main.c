@@ -7,12 +7,14 @@
 #include "timer.h"
 uint32_t TEMPERATURE;
 float zz = 1;
+float res;
 int main(void)
 {
 	init_RCC();
 	init_GPIO();
 	init_spi();
 	init_timer();
+	init_adc();
 
 
 	//  Записываем конфигурацию датчика
@@ -24,6 +26,12 @@ int main(void)
 
 	while (1)
 	{
+		 ADC1->CR |= ADC_CR_ADSTART; // запуск АЦП
+		  while(!(ADC1->ISR & ADC_ISR_EOC)); // ожидание завершения преобразования
+
+		 res= (float)ADC1->DR * 3.3 / 4096. ; // пересчет в напряжение
+
+
 		// Получаем температуру с датчика
 		TEMPERATURE = read_DS1722(0x02);
 
@@ -43,3 +51,12 @@ int main(void)
 
 	}
 }
+
+void ADC1_2_IRQHandler (void)
+{
+
+	ADC1->ISR |= ADC_ISR_EOC;
+
+}
+
+

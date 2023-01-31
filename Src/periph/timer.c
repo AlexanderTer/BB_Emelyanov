@@ -131,8 +131,8 @@ void init_timer(void)
 	// ADC1 trigger 1 event: Timer E compare 2
 	HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
-	// ADC1 trigger 1 event: Timer E compare 2
-	HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
+	// ADC2 trigger 1 event: Timer E compare 2
+	//HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
 
 

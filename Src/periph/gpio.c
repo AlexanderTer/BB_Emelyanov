@@ -26,13 +26,13 @@ void init_GPIO(void)
 	//HRTIM1
 	init_GPIO_AFunction(GPIOC,8,3);	 // HRTIM1_CHE1
 
-	//GPIOC->MODER |= 1<<17;
-	//GPIOC->OSPEEDR |= (1<<17)|(1<<16);
-	//GPIOC->AFR[1] |= (1<<1)|(1<<0);
 
 	init_GPIO_AFunction(GPIOC,9,3);  // HRTIM1_CHE2
 	init_GPIO_AFunction(GPIOB,14,13);// HRTIM1_CHD1
 	init_GPIO_AFunction(GPIOB,15,13);// HRTIM1_CHD2
+
+
+	init_GPIO_Analog(GPIOA,3);		 // ADC1IN4
 
 
 }

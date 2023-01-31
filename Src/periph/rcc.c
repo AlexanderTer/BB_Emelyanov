@@ -34,6 +34,9 @@ void init_RCC(void)
 	// Настройка умножителя
 	RCC->CFGR |= RCC_CFGR_PLLMUL9 | RCC_CFGR_PPRE1_DIV2;
 
+	// Делитель ацп PLL/1
+	RCC->CFGR2|= RCC_CFGR2_ADCPRE12_DIV1;
+
 	// Выбор HSE как источника для PLL
 	RCC->CFGR |= RCC_CFGR_PLLSRC_HSE_PREDIV;
 	//RCC->CFGR |= RCC_CFGR_MCO_PLL; // Вывод частот на порт PA8
