@@ -33,7 +33,8 @@ void init_GPIO(void)
 
 
 	init_GPIO_Analog(GPIOA,3);		 // ADC1IN4
-
+	init_GPIO_Analog(GPIOB,12);	     // ADC2IN13
+	init_GPIO_Analog(GPIOC,4);
 
 }
 

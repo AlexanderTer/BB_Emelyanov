@@ -14,6 +14,7 @@ int main(void)
 	init_GPIO();
 	init_spi();
 	init_timer();
+	setDuty (0.9);
 	init_adc();
 
 
@@ -26,10 +27,10 @@ int main(void)
 
 	while (1)
 	{
-		 ADC1->CR |= ADC_CR_ADSTART; // запуск АЦП
-		  while(!(ADC1->ISR & ADC_ISR_EOC)); // ожидание завершения преобразования
+		// ADC1->CR |= ADC_CR_ADSTART; // запуск АЦП
+		// while(!(ADC1->ISR & ADC_ISR_EOC)); // ожидание завершения преобразования
 
-		 res= (float)ADC1->DR * 3.3 / 4096. ; // пересчет в напряжение
+		// res= (float)ADC1->DR * 3.3 / 4096. ; // пересчет в напряжение
 
 
 		// Получаем температуру с датчика
@@ -44,7 +45,7 @@ int main(void)
 		if (TEMPERATURE < 30) GPIOB->ODR &= ~(1 << 7);
 		else GPIOB->ODR |= (1 << 7);
 
-		setDuty (0.5);
+		setDuty (0.9);
 		//GPIOB->ODR ^= (1 << 7);
 //		GPIOA->ODR ^= (1 << 15);
 //		GPIOC->ODR ^= (1 << 10) | (1 << 11) | (1 << 12);
@@ -55,8 +56,8 @@ int main(void)
 void ADC1_2_IRQHandler (void)
 {
 
-	ADC1->ISR |= ADC_ISR_EOC;
-
+	ADC2->ISR |= ADC_ISR_EOC;
+     res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
 }
 
 
