@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "adc.h"
 #include "dma.h"
+
 uint32_t TEMPERATURE;
 
 
@@ -27,7 +28,7 @@ int main(void)
 	// -Точность 8 бит
 
 	// Сконфигурировать датчик
-	write_DS1722(0x80, 0xE0);
+	//write_DS1722(0x80, 0xE0);
 
 	while (1)
 	{
@@ -38,7 +39,7 @@ int main(void)
 
 
 		// Получаем температуру с датчика
-		TEMPERATURE = read_DS1722(0x02);
+		//TEMPERATURE = read_DS1722(0x02);
 
 
 		for (int i = 0; i < 10000; i++)
@@ -57,11 +58,13 @@ int main(void)
 	}
 }
 
-void ADC1_2_IRQHandler (void)
-{
+//void ADC1_2_IRQHandler (void)
+//{
+//
+//	ADC1->ISR |= ADC_ISR_EOC;
+//    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
+//}
 
-	ADC1->ISR |= ADC_ISR_EOC;
-    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
-}
+
 
 

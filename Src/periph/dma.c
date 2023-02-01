@@ -1,10 +1,9 @@
 #include "dma.h"
 #include "stm32f3xx.h"
 
-uint32_t Il;
-uint32_t Uout[3];
 
 uint32_t ADC_BUFFER[4]; // 0 - Il 1 - Uout 2 - Inj 3 - Uin
+
 void init_dma(void)
 {
 	// Тактирование DMA
@@ -51,8 +50,14 @@ void init_dma(void)
 	DMA1_Channel2->CCR |= DMA_CCR_PSIZE_1;
 
 	// Разрешение прерывания по окончанию передачи
+	DMA1_Channel1->CCR |= DMA_CCR_TCIE;
 
+	// Включение каналов
 	DMA1_Channel1->CCR |= DMA_CCR_EN;
 	DMA1_Channel2->CCR |= DMA_CCR_EN;
+
+	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos;
+	NVIC_EnableIRQ(DMA1_Channel1_IRQn); //разрешаем прерывания
+	//NVIC_EnableIRQ(DMA1_Channel2_IRQn); //разрешаем прерывания
 
 }

@@ -14,8 +14,7 @@ void init_adc(void)
 	ADC1->CR |= ADC_CR_ADVREGEN_0;
 	ADC2->CR |= ADC_CR_ADVREGEN_0;
 	// Дождаться не менее 10 мкс
-	for (int i = 0; i < 1000; i++)
-		asm("nop");
+	for (int i = 0; i < 1000; i++) asm("nop");
 
 	// Калибровка для недифференциального режима
 	ADC1->CR &= ~ADC_CR_ADCALDIF;
@@ -55,10 +54,6 @@ void init_adc(void)
 	// Устанавливаем длительность преобразования в тактах АЦП: 19.5 CLK
 	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2| ADC_SMPR1_SMP3_2; // 1е 2е 3е преобразование
 	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2;// 1е преобразование
-
-
-	//ADC1->IER |= ADC_IER_EOCIE;    // Interrupt enable
-	//NVIC_EnableIRQ(ADC1_2_IRQn);    // enable interrupt ADC1 and ADC2
 
 	// DMA Circular Mode selected
 	ADC1->CFGR |= ADC_CFGR_DMACFG;
