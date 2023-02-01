@@ -60,7 +60,7 @@ int main(void)
 void ADC1_2_IRQHandler (void)
 {
 
-	ADC2->ISR |= ADC_ISR_EOC;
+	ADC1->ISR |= ADC_ISR_EOC;
     // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
 }
 
