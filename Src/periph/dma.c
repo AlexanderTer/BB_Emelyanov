@@ -2,7 +2,9 @@
 #include "stm32f3xx.h"
 
 uint32_t Il;
-uint32_t Uout;
+uint32_t Uout[3];
+
+uint32_t ADC_BUFFER[4]; // 0 - Il 1 - Uout 2 - Inj 3 - Uin
 void init_dma(void)
 {
 	// Тактирование DMA
@@ -13,11 +15,11 @@ void init_dma(void)
 	DMA1_Channel2->CPAR = (unsigned int) &(ADC2->DR); // Il
 
 	// Настраиваем адрес приёмника данных
-	DMA1_Channel1->CMAR = (unsigned int) &Uout;
-	DMA1_Channel2->CMAR = (unsigned int) &Il;
+	DMA1_Channel1->CMAR = (unsigned int) &ADC_BUFFER[1];
+	DMA1_Channel2->CMAR = (unsigned int) &ADC_BUFFER[0];
 
 	// Настраиваем количество данных для передачи (0 - 216-1)
-	DMA1_Channel1->CNDTR = 1;
+	DMA1_Channel1->CNDTR = 3;
 	DMA1_Channel2->CNDTR = 1;
 
 	// Установить приоритет
@@ -32,9 +34,9 @@ void init_dma(void)
 	DMA1_Channel1->CCR |= DMA_CCR_CIRC;
 	DMA1_Channel2->CCR |= DMA_CCR_CIRC;
 
-	// Режим увеличения адреса памяти отключён
-	DMA1_Channel1->CCR &= ~DMA_CCR_MINC;
-	DMA1_Channel2->CCR &= ~DMA_CCR_MINC;
+	// Режим увеличения адреса памяти
+	DMA1_Channel1->CCR |= DMA_CCR_MINC;   // Включён
+	DMA1_Channel2->CCR &= ~DMA_CCR_MINC; // Отключён
 
 	// Режим увеличения адреса переферии отключён
 	DMA1_Channel1->CCR &= ~DMA_CCR_PINC;
@@ -49,7 +51,7 @@ void init_dma(void)
 	DMA1_Channel2->CCR |= DMA_CCR_PSIZE_1;
 
 	// Разрешение прерывания по окончанию передачи
-	//DMA1_Channel2->CCR |= DMA_CCR_TCIE;
+
 	DMA1_Channel1->CCR |= DMA_CCR_EN;
 	DMA1_Channel2->CCR |= DMA_CCR_EN;
 

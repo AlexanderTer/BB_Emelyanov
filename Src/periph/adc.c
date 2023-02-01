@@ -35,13 +35,27 @@ void init_adc(void)
 	ADC1->CFGR |= ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2;
 	ADC2->CFGR |= ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2;
 
+
+
 	// Выбор канала первого преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ1_2; // CH IN4 (100)
+	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) - Il
 	ADC2->SQR1 |= ADC_SQR1_SQ1_0 | ADC_SQR1_SQ1_2 | ADC_SQR1_SQ1_3; // CH IN13 (1101) - Vout
 
-	// Количество преобразований после получения триггера выборки = 1
-	ADC1->SQR1 &= ~ADC_SQR1_L;
-	ADC2->SQR1 &= ~ADC_SQR1_L;
+	// Выбор канала второго преобразования
+	ADC1->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_1; // CH IN3 (11) - Inj
+
+	// Выбор канала третьего преобразования
+	ADC1->SQR1 |= ADC_SQR1_SQ3_0 | ADC_SQR1_SQ3_2 | ADC_SQR1_SQ3_3; // CH IN13 (1101) - Vin
+
+
+	// Количество преобразований после получения триггера выборки
+	ADC1->SQR1 |= ADC_SQR1_L_1; // 3 Преобразования
+	ADC2->SQR1 &= ~ADC_SQR1_L;  // 1 Преобразование
+
+	// Устанавливаем длительность преобразования в тактах АЦП: 19.5 CLK
+	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2| ADC_SMPR1_SMP3_2; // 1е 2е 3е преобразование
+	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2;// 1е преобразование
+
 
 	//ADC1->IER |= ADC_IER_EOCIE;    // Interrupt enable
 	//NVIC_EnableIRQ(ADC1_2_IRQn);    // enable interrupt ADC1 and ADC2
