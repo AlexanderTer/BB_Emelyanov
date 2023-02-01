@@ -5,9 +5,12 @@
 #include "gpio.h"
 #include "spi.h"
 #include "timer.h"
+#include "adc.h"
+#include "dma.h"
 uint32_t TEMPERATURE;
-float zz = 1;
-float res;
+
+
+
 int main(void)
 {
 	init_RCC();
@@ -15,6 +18,7 @@ int main(void)
 	init_spi();
 	init_timer();
 	setDuty (0.9);
+	init_dma();
 	init_adc();
 
 
@@ -41,7 +45,7 @@ int main(void)
 	{
 	}
 
-	//	if (zz> 1.8) zz = 0.1;
+
 		if (TEMPERATURE < 30) GPIOB->ODR &= ~(1 << 7);
 		else GPIOB->ODR |= (1 << 7);
 
@@ -57,7 +61,7 @@ void ADC1_2_IRQHandler (void)
 {
 
 	ADC2->ISR |= ADC_ISR_EOC;
-     res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
+    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
 }
 
 

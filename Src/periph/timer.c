@@ -13,7 +13,6 @@
 
 #define U_MIN_BUCK DUTY_MIN_BUCK
 #define U_MAX_BUCK DUTY_MAX_BUCK
-
 #define U_MIN_BOOST 1 + DUTY_MIN_BOOST
 #define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
@@ -69,7 +68,7 @@ void init_timer(void)
 	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9));
 
 	// Falling Deadtime
-	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9))<< 16;
+	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9)) << 16;
 
 	// Подключение результата сравнения на выход
 	HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
