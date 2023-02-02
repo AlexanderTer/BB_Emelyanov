@@ -8,7 +8,7 @@ void init_adc(void)
 
 	// Очистить биты источника опорного
 	ADC1->CR &= ~ADC_CR_ADVREGEN;
-	ADC1->CR &= ~ADC_CR_ADVREGEN;
+	ADC2->CR &= ~ADC_CR_ADVREGEN;
 
 	// Включить опорное напряжение
 	ADC1->CR |= ADC_CR_ADVREGEN_0;
@@ -37,8 +37,8 @@ void init_adc(void)
 
 
 	// Выбор канала первого преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) - Il
-	ADC2->SQR1 |= ADC_SQR1_SQ1_0 | ADC_SQR1_SQ1_2 | ADC_SQR1_SQ1_3; // CH IN13 (1101) - Vout
+	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) -Vout
+	ADC2->SQR1 |= ADC_SQR1_SQ1_0 | ADC_SQR1_SQ1_2 | ADC_SQR1_SQ1_3; // CH IN13 (1101) - Il
 
 	// Выбор канала второго преобразования
 	ADC1->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_1; // CH IN3 (11) - Inj

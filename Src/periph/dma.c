@@ -2,7 +2,7 @@
 #include "stm32f3xx.h"
 
 
-uint32_t ADC_BUFFER[4]; // 0 - Il 1 - Uout 2 - Inj 3 - Uin
+volatile unsigned int ADC_Buffer[4]; // 0 - Il 1 - Uout 2 - Inj 3 - Uin
 
 void init_dma(void)
 {
@@ -14,8 +14,8 @@ void init_dma(void)
 	DMA1_Channel2->CPAR = (unsigned int) &(ADC2->DR); // Il
 
 	// Настраиваем адрес приёмника данных
-	DMA1_Channel1->CMAR = (unsigned int) &ADC_BUFFER[1];
-	DMA1_Channel2->CMAR = (unsigned int) &ADC_BUFFER[0];
+	DMA1_Channel1->CMAR = (unsigned int) &ADC_Buffer[1];
+	DMA1_Channel2->CMAR = (unsigned int) &ADC_Buffer[0];
 
 	// Настраиваем количество данных для передачи (0 - 216-1)
 	DMA1_Channel1->CNDTR = 3;

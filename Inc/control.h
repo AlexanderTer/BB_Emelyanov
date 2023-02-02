@@ -2,7 +2,7 @@
 #define __CONTROL_H__
 
 
-
+// ---------------- Структура измерений ----------------
 typedef struct
 {
 	struct
@@ -19,5 +19,8 @@ typedef struct
 }Measure_Struct; // Структура с параметрами измерений
 
 extern Measure_Struct BB_Control;
+
+
+void ADC_Data_Hanler (void);
 
 #endif
