@@ -10,8 +10,7 @@ void init_GPIO(void)
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
 
 	// LED
-	//init_GPIO_Output(GPIOA, 5); 	//  Green LED PA5
-	//init_GPIO_Output(GPIOA, 15); 	//  NOT WORK VD34
+	//init_GPIO_Output(GPIOA, 15); 	//  КОРРЕКТНО НЕ РАБОТАЕТ ПОЧЕМУТО НА ВСЕХ ПЛАТАХ!!! VD34
 	init_GPIO_Output(GPIOB, 7); 	//  Red LED VD35
 	init_GPIO_Output(GPIOC, 10); 	//  Red LED VD31
 	init_GPIO_Output(GPIOC, 11); 	//  Red LED VD32
@@ -23,10 +22,8 @@ void init_GPIO(void)
 	init_GPIO_AFunction(GPIOB,5,5); // SPI1_MOSI
 	init_GPIO_Output(GPIOC, 7); 	// SPI1_CE
 
-	//HRTIM1
+	// HRTIM1
 	init_GPIO_AFunction(GPIOC,8,3);	 // HRTIM1_CHE1
-
-
 	init_GPIO_AFunction(GPIOC,9,3);  // HRTIM1_CHE2
 	init_GPIO_AFunction(GPIOB,14,13);// HRTIM1_CHD1
 	init_GPIO_AFunction(GPIOB,15,13);// HRTIM1_CHD2

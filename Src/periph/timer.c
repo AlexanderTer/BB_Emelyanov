@@ -2,7 +2,7 @@
 #include "timer.h"
 
 #define Fsw (300e3)
-#define DEADTIME (100e-9) // 868 ps resolution  ( ! 222ns MAX ! )
+#define DEADTIME (35e-9) // 868 ps resolution  ( ! 222ns MAX ! )
 
 
 
