@@ -16,6 +16,8 @@
 #define U_MIN_BOOST 1 + DUTY_MIN_BOOST
 #define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
+volatile float dutyBuck;
+volatile float dutyBoost;
 void init_timer(void)
 {
 
@@ -119,7 +121,7 @@ void init_timer(void)
 
 	//--- Триггеры выборки
 	// Значение регистров сравнения 2 - Положение триггера выборки АЦП
-	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.5));
+	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.75));
 
 	// 101 - Timer E источник триггера выборки для ADC1
 	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC1USRC_0 | HRTIM_CR1_ADC1USRC_2;
@@ -141,17 +143,19 @@ void init_timer(void)
 
 void setDuty(float u)
 {
-	float dutyBuck;
-	float dutyBoost;
+
+
 
 	if (u < U_MIN_BUCK)
 	{
 		// Отключить все выходы
-		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS
-				| HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
+		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS | HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
 
 		dutyBuck = 0;
 		dutyBoost = 0;
+
+		// Триггер выборки на половине периода
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.75));
 	}
 	else if ((u >= U_MIN_BUCK) && (u < U_MAX_BUCK))
 	{
@@ -164,24 +168,31 @@ void setDuty(float u)
 
 		dutyBuck = u;
 		dutyBoost = 1; // D1 в 1
+
+		// Триггер выборки в половине коэффициента заполнения Buck
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBuck) * 0.75);
 	}
 	else if ((u >= U_MAX_BUCK) && (u < 1))
 	{
 		// Включить все таймеры
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN
-				| HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
+		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
 		dutyBuck = u * (1 - DUTY_MIN_BOOST);
 		dutyBoost = DUTY_MIN_BOOST;
+
+		// Триггер выборки в половине коэффициента заполнения Buck
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBuck) * 0.75);
 	}
 	else if ((u >= 1) && (u < U_MIN_BOOST))
 	{
 		// Включить все таймеры
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN
-				| HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
+		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
 		dutyBuck = DUTY_MAX_BUCK;
 		dutyBoost = 1 - DUTY_MAX_BUCK * (2 - u);
+
+		// Триггер выборки в половине коэффициента заполнения Boost
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBoost) * 0.75);
 	}
 	else if ((u >= U_MIN_BOOST) && (u < U_MAX_BOOST))
 	{
@@ -193,6 +204,9 @@ void setDuty(float u)
 
 		dutyBuck = 0; // Для открытия E2
 		dutyBoost = u - 1.0;
+
+		// Триггер выборки в половине коэффициента заполнения Boost
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBoost) * 0.75);
 	}
 	else if (u >= U_MAX_BOOST)
 	{
@@ -204,12 +218,18 @@ void setDuty(float u)
 
 		dutyBuck = 0; // Для открытия E2
 		dutyBoost = DUTY_MAX_BOOST;
+
+		// Триггер выборки в половине коэффициента заполнения Boost
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBoost) * 0.75);
 	}
 
 	// E compare
 	HRTIM1->sTimerxRegs[4].CMP1xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBuck));
+
 	// D compare
 	HRTIM1->sTimerxRegs[3].CMP1xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (dutyBoost));
+
+
 
 }
 

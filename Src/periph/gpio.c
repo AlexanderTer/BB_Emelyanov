@@ -11,10 +11,10 @@ void init_GPIO(void)
 
 	// LED
 	//init_GPIO_Output(GPIOA, 15); 	//  КОРРЕКТНО НЕ РАБОТАЕТ ПОЧЕМУТО НА ВСЕХ ПЛАТАХ!!! VD34
-	init_GPIO_Output(GPIOB, 7); 	//  Red LED VD35
-	init_GPIO_Output(GPIOC, 10); 	//  Red LED VD31
-	init_GPIO_Output(GPIOC, 11); 	//  Red LED VD32
-	init_GPIO_Output(GPIOC, 12); 	//  Red LED VD33
+	init_GPIO_Output(GPIOB, 7); 	//  Red LED VD35 Power
+	init_GPIO_Output(GPIOC, 10); 	//  Red LED VD31 iL
+	init_GPIO_Output(GPIOC, 11); 	//  Red LED VD32 Uout
+	init_GPIO_Output(GPIOC, 12); 	//  Red LED VD33 Uin
 
 	// SPI
 	init_GPIO_AFunction(GPIOB,3,5); // SPI1_SCK
@@ -56,3 +56,5 @@ void init_GPIO_Analog(GPIO_TypeDef *gpio, unsigned int pin)
 {
 	gpio->MODER |= 3 << (2 * pin);
 }
+
+

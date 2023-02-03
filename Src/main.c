@@ -17,8 +17,9 @@ int main(void)
 	init_RCC();
 	init_GPIO();
 	init_spi();
+
 	init_timer();
-	setDuty (0.5);
+	setDuty (1.6);
 	init_dma();
 	init_adc();
 
