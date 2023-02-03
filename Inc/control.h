@@ -11,9 +11,9 @@ typedef struct
 		float uout;
 		float inj;
 		float uin;
-		float power
+		float power;
 
-	} data, shift, scale;
+	}data, shift, scale;
 	// data - истинное значение после пересчёта,
 	// shift - смещение
 	// scale - коэффициент масштабирования
@@ -37,6 +37,16 @@ extern Protect_Struct BB_Protect;
 
 
 
+// ---------------- Структура модулятора ----------------
+typedef struct
+{
+
+float dutyBuck;
+float dutyBoost;
+float duty;     // 0 .. 2 Общий сигнал уставки, выход регулятора тока
+
+}Modulator_Struct;
+extern Modulator_Struct BB_Modulator;
 
 
 void ADC_Data_Hanler (void);

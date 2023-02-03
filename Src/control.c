@@ -1,9 +1,10 @@
 #include "control.h"
 #include "stm32f3xx.h"
 #include "dma.h"
+#include "control.h"
 
 #define DUTY_MIN_BOOST  (0.1)//!!
-extern float dutyBoost;//!!
+
 
 // ------------- Реализация структуры измерений Measure_Struct -------------
 Measure_Struct BB_Measure =
@@ -44,13 +45,30 @@ Protect_Struct BB_Protect =
 };// end Protect_Struct BB_Protect -----------------------------------------
 
 
+//// ------------- Реализация модулятора BB_Modulator  ------------------
+
+Modulator_Struct BB_Modulator =
+{
+
+
+};
+
 
 // ------------- Главное прерывание - обработчик -------------
 void DMA1_Channel1_IRQHandler(void)
 {
 	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos; //сбрасываем флаг прерывания
+
 	ADC_Data_Hanler();
+
 	software_protection_monitor();
+
+	BB_Modulator.duty = 1.6;
+
+	setDuty();
+
+
+
 }// end DMA1_Channel1_IRQHandler ---------------------------------------------
 
 
@@ -66,7 +84,7 @@ void ADC_Data_Hanler(void)
 	BB_Measure.data.inj = BB_Measure.scale.inj * ADC_Buffer[2] + BB_Measure.shift.inj;
 	BB_Measure.data.uin = BB_Measure.scale.uin * ADC_Buffer[3] + BB_Measure.shift.uin;
 
-	if (dutyBoost > DUTY_MIN_BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - dutyBoost);
+	if (BB_Modulator.dutyBoost > DUTY_MIN_BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - BB_Modulator.dutyBoost);
 	else BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout;
 
 

@@ -2,6 +2,6 @@
 #define __TIMER_H__
 
 void init_timer(void);
-void setDuty (float duty);
+void setDuty (void);
 
 #endif

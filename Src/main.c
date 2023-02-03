@@ -19,7 +19,7 @@ int main(void)
 	init_spi();
 
 	init_timer();
-	setDuty (1.6);
+	//setDuty (1.6);
 	init_dma();
 	init_adc();
 
