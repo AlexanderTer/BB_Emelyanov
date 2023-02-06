@@ -3,6 +3,10 @@
 
 void init_RCC(void)
 {
+	// Enable hardware FPU
+	    SCB->CPACR |= ((3UL << 10*2) | /* set CP10 Full Access */
+	                   (3UL << 11*2) ); /* set CP11 Full Access */
+
 	// Сброс тактирования шин
 	RCC->AHBRSTR = 0xFFFFFFFF;
 	RCC->AHBRSTR = 0x00000000;
@@ -42,7 +46,7 @@ void init_RCC(void)
 	//RCC->CFGR |= RCC_CFGR_MCO_PLL; // Вывод частот на порт PA8
 
 	// Настройка flash на высокую частоту
-	FLASH->ACR |= FLASH_ACR_LATENCY_2;
+	FLASH->ACR |= FLASH_ACR_LATENCY_1;
 
 	RCC->CR |= RCC_CR_PLLON;
 	while (!(RCC->CR & RCC_CR_PLLRDY));

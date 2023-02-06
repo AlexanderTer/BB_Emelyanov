@@ -29,6 +29,7 @@ void init_GPIO(void)
 	init_GPIO_AFunction(GPIOB,15,13);// HRTIM1_CHD2
 
 
+	// Analog init
 	init_GPIO_Analog(GPIOA,3);		 // ADC1 IN4   Uout
 	init_GPIO_Analog(GPIOA,2);       // ADC1 IN3   Inj
 	init_GPIO_Analog(GPIOB,13);      // ADC1 IN13  Uin

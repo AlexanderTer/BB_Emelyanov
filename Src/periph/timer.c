@@ -2,20 +2,10 @@
 #include "timer.h"
 #include "control.h"
 
-#define Fsw (300e3)
+
+#define Fsw (100e3)
 #define DEADTIME (35e-9) // 868 ps resolution  ( ! 222ns MAX ! )
 
-
-
-#define DUTY_MIN_BUCK (0.05)
-#define DUTY_MAX_BUCK (0.9)
-#define DUTY_MIN_BOOST  (0.1)
-#define DUTY_MAX_BOOST (0.95)
-
-#define U_MIN_BUCK DUTY_MIN_BUCK
-#define U_MAX_BUCK DUTY_MAX_BUCK
-#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
 
 void init_timer(void)
@@ -35,16 +25,15 @@ void init_timer(void)
 
 	// -- Master timer --------------------------------------------------------------
 
-	// Буферизация
-	HRTIM1->sMasterRegs.MCR |= HRTIM_MCR_PREEN;
+
 
 	// Период таймера
 	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) (144e6 * 32.f / Fsw));
 
 	// -- Timer D - Boost timer -------------------------------------------------------
 
-	// Буферизация
-	//HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_PREEN;
+	// Обновление регистра сравнения по сбросу таймера
+	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
 	HRTIM1->sTimerxRegs[3].PERxR = (uint32_t) ((float) (144e6 * 32.f / Fsw)); //15360
@@ -85,8 +74,8 @@ void init_timer(void)
 
 	// -- Timer E - Buck timer -------------------------------------------------------
 
-	// Буферизация
-	//HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;
+	// Обновление регистра сравнения по сбросу таймера
+	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
 	HRTIM1->sTimerxRegs[4].PERxR = (uint32_t) ((float) (144e6 * 32.f / Fsw)); //15360
@@ -137,97 +126,12 @@ void init_timer(void)
 
 
 
+	// Буферизация
+	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;
+	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_PREEN;
+
 	// Включение счёта
 	HRTIM1->sMasterRegs.MCR |= HRTIM_MCR_MCEN | HRTIM_MCR_TECEN | HRTIM_MCR_TDCEN;
 }
 
-void setDuty(void)
-{
-
-float u = BB_Modulator.duty;
-
-	if (u < U_MIN_BUCK)
-	{
-		// Отключить все выходы
-		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS | HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
-
-		BB_Modulator.dutyBuck = 0;
-		BB_Modulator.dutyBoost = 0;
-
-		// Триггер выборки на половине периода
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.75));
-	}
-	else if ((u >= U_MIN_BUCK) && (u < U_MAX_BUCK))
-	{
-		// Включить E1 E2 D1
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN
-				| HRTIM_OENR_TD1OEN;
-
-		// Отключить D2
-		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TD2ODIS;
-
-		BB_Modulator.dutyBuck = u;
-		BB_Modulator.dutyBoost = 1; // D1 в 1
-
-		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBuck) * 0.75);
-	}
-	else if ((u >= U_MAX_BUCK) && (u < 1))
-	{
-		// Включить все таймеры
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
-
-		BB_Modulator.dutyBuck = u * (1 - DUTY_MIN_BOOST);
-		BB_Modulator.dutyBoost = DUTY_MIN_BOOST;
-
-		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBuck) * 0.75);
-	}
-	else if ((u >= 1) && (u < U_MIN_BOOST))
-	{
-		// Включить все таймеры
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
-
-		BB_Modulator.dutyBuck = DUTY_MAX_BUCK;
-		BB_Modulator.dutyBoost = 1 - DUTY_MAX_BUCK * (2 - u);
-
-		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBoost) * 0.75);
-	}
-	else if ((u >= U_MIN_BOOST) && (u < U_MAX_BOOST))
-	{
-		// Включить E2 D1 D2
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
-
-		// Отключить E1
-		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS;
-
-		BB_Modulator.dutyBuck = 0; // Для открытия E2
-		BB_Modulator.dutyBoost = u - 1.0;
-
-		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBoost) * 0.75);
-	}
-	else if (u >= U_MAX_BOOST)
-	{
-		// Включить E2 D1 D2
-		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
-
-		// Отключить E1
-		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS;
-
-		BB_Modulator.dutyBuck = 0; // Для открытия E2
-		BB_Modulator.dutyBoost = DUTY_MAX_BOOST;
-
-		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBoost) * 0.75);
-	}
-
-	// E compare
-	HRTIM1->sTimerxRegs[4].CMP1xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBuck));
-
-	// D compare
-	HRTIM1->sTimerxRegs[3].CMP1xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Modulator.dutyBoost));
-
-}
 
