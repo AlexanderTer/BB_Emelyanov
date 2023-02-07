@@ -70,7 +70,17 @@ Protect_Struct BB_Protect =
 
 };// end Protect_Struct BB_Protect -----------------------------------------
 
+void COMP4_6_IRQHandler(void)
+{
+	float il_ref = 5.f;
+		float error_current = il_ref - BB_Measure.data.iL;
+}
 
+void COMP2_IRQHandler(void)
+{
+	float il_ref = 5.f;
+		float error_current = il_ref - BB_Measure.data.iL;
+}
 
 
 // ------------- Главное прерывание - обработчик -------------
@@ -84,11 +94,11 @@ void DMA1_Channel1_IRQHandler(void)
 	ADC_Data_Hanler();
 
 	// Проверка программных защит
-	software_protection_monitor();
+	//software_protection_monitor();
 
 	float il_ref = 5.f;
 	float error_current = il_ref - BB_Measure.data.iL;
-
+///
 	BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
 
 
@@ -150,12 +160,12 @@ void software_protection_monitor(void)
 	//else GPIOC->ODR &= ~(1 << 12);
 
 
-	if (BB_Measure.data.power > BB_Protect.power_max)
-		{
-		 	BB_State = FAULT;
-			timer_PWM_off();
-			GPIOB->ODR |= (1 << 7);
-		}
+//	if (BB_Measure.data.power > BB_Protect.power_max)
+//		{
+//		 	BB_State = FAULT;
+//			timer_PWM_off();
+//			GPIOB->ODR |= (1 << 7);
+//		}
 	//else GPIOB->ODR &= ~(1 << 7);
 
 }
@@ -192,7 +202,7 @@ void timer_PWM_off(void)
 /**
  * \brief Функция применения рассчитанного коэффициента заполнения к таймеру HRTIM
  */
-void set_Duty(void)
+inline void set_Duty(void)
 {
 
 float u = BB_Control.duty;
@@ -222,7 +232,7 @@ float u = BB_Control.duty;
 		// Триггер выборки в половине коэффициента заполнения Buck
 		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Buck) * 0.75);
 	}
-	else if ((u >= U_MAX_BUCK) && (u < 1))
+	 if ((u >= U_MAX_BUCK) && (u < 1))
 	{
 		// Включить все таймеры
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
@@ -231,7 +241,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = DUTY_MIN_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Buck) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Buck) * 0.75);
 	}
 	else if ((u >= 1) && (u < U_MIN_BOOST))
 	{
@@ -274,10 +284,10 @@ float u = BB_Control.duty;
 	}
 
 	// E compare
-	HRTIM1->sTimerxRegs[4].CMP1xR = (uint32_t) (144e6 * 32.f / Fsw * BB_Control.duty_Buck);
+	HRTIM1->sTimerxRegs[4].CMP1xR = HRTIM1->sTimerxRegs[4].PERxR  * BB_Control.duty_Buck;
 
 	// D compare
-	HRTIM1->sTimerxRegs[3].CMP1xR = (uint32_t) (144e6 * 32.f / Fsw * BB_Control.duty_Boost);
+	HRTIM1->sTimerxRegs[3].CMP1xR = HRTIM1->sTimerxRegs[3].PERxR * BB_Control.duty_Boost;
 
 }
 

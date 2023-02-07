@@ -125,6 +125,21 @@ void init_timer(void)
 	//HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
 
+	// --- Fault ----------------
+
+	// Источник - AC2 - IL protect
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1SRC;
+
+	// Включить сигнал ошибки
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1E;
+
+	// Источник - AC6 - Uout protect
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3SRC;
+
+	// Включить сигнал ошибки
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3E;
+
+
 
 	// Буферизация
 	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;

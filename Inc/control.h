@@ -6,7 +6,7 @@
 #define SET_SHIFTS_MAX_COUNT ((unsigned int)(0.5 * 300.e3))
 
 #define Fsw (100e3)
-
+#define PERIOD (144e6 * 32.f / Fsw)
 
 
 

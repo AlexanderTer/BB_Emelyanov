@@ -3,9 +3,7 @@
 
 void init_RCC(void)
 {
-	// Enable hardware FPU
-	    SCB->CPACR |= ((3UL << 10*2) | /* set CP10 Full Access */
-	                   (3UL << 11*2) ); /* set CP11 Full Access */
+
 
 	// Сброс тактирования шин
 	RCC->AHBRSTR = 0xFFFFFFFF;

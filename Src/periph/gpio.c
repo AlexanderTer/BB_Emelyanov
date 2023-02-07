@@ -34,7 +34,9 @@ void init_GPIO(void)
 	init_GPIO_Analog(GPIOA,2);       // ADC1 IN3   Inj
 	init_GPIO_Analog(GPIOB,13);      // ADC1 IN13  Uin
 	init_GPIO_Analog(GPIOB,12);	     // ADC2 IN13  Il
-
+	init_GPIO_Analog(GPIOA,7);	     // AC2 IN+ Il protect
+	init_GPIO_Analog(GPIOB,11);	     // AC6 IN+ Vout protect
+	init_GPIO_AFunction(GPIOC,6,7);// COMP6
 }
 
 void init_GPIO_Output(GPIO_TypeDef *gpio, unsigned int pin)
