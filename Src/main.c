@@ -15,6 +15,8 @@ uint32_t TEMPERATURE;
 
 int main(void)
 {
+
+
 	init_RCC();
 	init_GPIO();
 	init_spi();

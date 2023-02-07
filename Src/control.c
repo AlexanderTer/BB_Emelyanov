@@ -16,18 +16,14 @@ Control_Struct BB_Control =
 {
 		.pid_current =
 		{
-				.kp = 0,
+				 .kp = F2Q(0.055769, Q_USE),
+
 						.integrator =
 						{
-								.k = 100 * TSW,
-								.sat = {.min = 0, .max = 0.98},
+								  .k = F2Q(4100 * (TSW), Q_USE),
+								  .sat = { .min = 0, .max = F2Q(0.98, Q_USE) },
 						},
-						.diff =
-						{
-							.k = 0,
-
-						},
-						.sat = {.min = 0, .max = 1},
+						 .sat = { .min = 0, .max = F2Q(1, Q_USE) },
 		},
 
 };
@@ -41,7 +37,7 @@ Measure_Struct BB_Measure =
 		.shift =
 		{
 				.iL = 0,
-				.uout = 12.1324 / K_ADC,
+				.uout = F2Q(12.1324 / K_ADC,Q_USE),
 				.inj = 0,
 				.uin = 0,
 		},
@@ -49,10 +45,10 @@ Measure_Struct BB_Measure =
 		// ------ Множитель -----
 		.scale =
 		{
-				.iL =   K_ADC * 5.0505,
-				.uout = K_ADC * 1.4749,
-				.inj =  K_ADC,
-				.uin =  K_ADC * 16.6,
+				.iL =  F2Q( K_ADC * 5.0505, Q_USE),
+				.uout = F2Q( K_ADC * 1.4749,Q_USE),
+				.inj =  F2Q( K_ADC,Q_USE),
+				.uin =  F2Q( K_ADC * 16.6,Q_USE),
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -62,11 +58,11 @@ Measure_Struct BB_Measure =
 Protect_Struct BB_Protect =
 {
 
-		.iL_max    = 14.,
-		.uin_max   = 42.,
-		.uin_min   = 7.5,
-		.uout_max  = 22.,
-		.power_max = 130.,
+		.iL_max    =  F2Q(14.,Q_USE),
+		.uin_max   =  F2Q(42., Q_USE),
+		.uin_min   =  F2Q(7.5,Q_USE),
+		.uout_max  =  F2Q(22.,Q_USE),
+		.power_max =  F2Q(130.,Q_USE),
 
 };// end Protect_Struct BB_Protect -----------------------------------------
 
@@ -76,6 +72,8 @@ Protect_Struct BB_Protect =
 // ------------- Главное прерывание - обработчик -------------
 void DMA1_Channel1_IRQHandler(void)
 {
+
+
 	GPIOB->ODR |= (1 << 7);
 
 	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos; //сбрасываем флаг прерывания
@@ -86,10 +84,10 @@ void DMA1_Channel1_IRQHandler(void)
 	// Проверка программных защит
 	software_protection_monitor();
 
-	float il_ref = 5.f;
-	float error_current = il_ref - BB_Measure.data.iL;
+	uint32_t il_ref = 5.;
+	uint32_t error_current = SUB_Q(il_ref, BB_Measure.data.iL);
 
-	BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
+	BB_Control.duty = PID_Controller_Q(&BB_Control.pid_current,error_current);
 
 
 
@@ -97,6 +95,7 @@ void DMA1_Channel1_IRQHandler(void)
 	//if (BB_State != FAULT) set_Duty();
 
 	GPIOB->ODR &= ~(1 << 7);
+
 
 }// end DMA1_Channel1_IRQHandler ---------------------------------------------
 
@@ -108,10 +107,10 @@ void DMA1_Channel1_IRQHandler(void)
 void ADC_Data_Hanler(void)
 {
 	extern volatile unsigned int ADC_Buffer[4];
-	BB_Measure.data.iL = BB_Measure.scale.iL * ADC_Buffer[0] + BB_Measure.shift.iL;
-	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC_Buffer[1] + BB_Measure.shift.uout);
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC_Buffer[2] + BB_Measure.shift.inj;
-	BB_Measure.data.uin = BB_Measure.scale.uin * ADC_Buffer[3] + BB_Measure.shift.uin;
+	BB_Measure.data.iL = SUM_Q(MUL_Q(BB_Measure.scale.iL, F2Q(ADC_Buffer[0],Q_USE),Q_USE), BB_Measure.shift.iL);
+	BB_Measure.data.uout = MUL_Q(BB_Measure.scale.uout, (SUM_Q(F2Q(ADC_Buffer[1],Q_USE) , BB_Measure.shift.uout)),Q_USE);
+	BB_Measure.data.inj = 	MUL_Q(BB_Measure.scale.inj, (SUM_Q(F2Q(ADC_Buffer[2],Q_USE) , BB_Measure.shift.inj)),Q_USE);
+	BB_Measure.data.uin = 	MUL_Q(BB_Measure.scale.uin, (SUM_Q(F2Q(ADC_Buffer[3],Q_USE) , BB_Measure.shift.uin)),Q_USE);
 
 	// Вычисление мощности
 	//if (BB_Control.duty_Boost > DUTY_MIN_BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - BB_Control.duty_Boost);

@@ -25,10 +25,10 @@
 typedef struct {
 
 
-	float duty; 					// Коэффициент заполнения, [0..2]
-	float duty_Boost;
-	float duty_Buck;
-	float iL_ref;					// Уставка на ток рекатора
+	int32_t duty; 					// Коэффициент заполнения, [0..2]
+	int32_t duty_Boost;
+	int32_t duty_Buck;
+	int32_t iL_ref;					// Уставка на ток рекатора
 
 	PID_Controller_Struct pid_current;// Структура регулятора тока реактора
 	PID_Controller_Struct pid_voltage;// Структура регулятора напряжения
@@ -44,12 +44,12 @@ typedef struct
 
 	struct
 	{
-		float iL;
-		float uout;
-		float inj;
-		float uin;
-		float power;
-		float temperature;
+		int32_t iL;
+		int32_t uout;
+		int32_t inj;
+		int32_t uin;
+		int32_t power;
+		int32_t temperature;
 
 	}data, shift, scale,sum;
 	// data - истинное значение после пересчёта,
@@ -65,11 +65,11 @@ extern Measure_Struct BB_Measure;
 // ---------------- Структура программных защит ----------------
 typedef struct
 {
-	float iL_max;
-	float uin_max;
-	float uin_min;
-	float uout_max;
-	float power_max;
+	int32_t iL_max;
+	int32_t uin_max;
+	int32_t uin_min;
+	int32_t uout_max;
+	int32_t power_max;
 
 }Protect_Struct;
 extern Protect_Struct BB_Protect;
