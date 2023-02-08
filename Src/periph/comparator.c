@@ -18,11 +18,12 @@ void init_ac(void)
 
 	// ---- AC6 ------ Uout protect -------------------
 	// Напряжение срабатывания - 2.475 (21.55 В)
-	COMP6->CSR |=   COMP6_CSR_COMP6INSEL_1 | (1 << 22);
+	COMP6->CSR |=  ( 0b11 << COMP6_CSR_COMP6OUTSEL_Pos)| (1 << 22) ;
 
 	// Включение модуля компаратора
 	COMP6->CSR |= COMP6_CSR_COMP6EN;
 
 	NVIC_EnableIRQ(COMP2_IRQn);
 	NVIC_EnableIRQ(COMP4_6_IRQn);
+	NVIC_EnableIRQ(HRTIM1_FLT_IRQn);
 }

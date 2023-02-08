@@ -70,16 +70,13 @@ Protect_Struct BB_Protect =
 
 };// end Protect_Struct BB_Protect -----------------------------------------
 
-void COMP4_6_IRQHandler(void)
-{
-	float il_ref = 5.f;
-		float error_current = il_ref - BB_Measure.data.iL;
-}
 
-void COMP2_IRQHandler(void)
+
+void HRTIM1_FLT_IRQHandler(void)
 {
-	float il_ref = 5.f;
-		float error_current = il_ref - BB_Measure.data.iL;
+	HRTIM1->sCommonRegs.ICR |= HRTIM_ICR_FLT3C;
+	//float il_ref = 5.f;
+		//	float error_current = il_ref - BB_Measure.data.iL;
 }
 
 
@@ -96,15 +93,15 @@ void DMA1_Channel1_IRQHandler(void)
 	// Проверка программных защит
 	//software_protection_monitor();
 
-	float il_ref = 5.f;
-	float error_current = il_ref - BB_Measure.data.iL;
+	//float il_ref = 5.f;
+	//float error_current = il_ref - BB_Measure.data.iL;
 ///
-	BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
+	//BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
 
 
 
 	// Применение рачётного коэффициента заполнения к модулятору
-	if (BB_State != FAULT) set_Duty();
+	//if (BB_State != FAULT) set_Duty();
 
 	GPIOB->ODR &= ~(1 << 7);
 
@@ -205,7 +202,7 @@ void timer_PWM_off(void)
 inline void set_Duty(void)
 {
 
-float u = BB_Control.duty;
+float u = 0.8;//BB_Control.duty;
 
 	if (u < U_MIN_BUCK)
 	{

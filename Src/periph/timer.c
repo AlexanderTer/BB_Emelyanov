@@ -26,6 +26,33 @@ void init_timer(void)
 	// -- Master timer --------------------------------------------------------------
 
 
+	// --- Fault ------------------------------------------------
+
+	// Источник - AC2 - IL protect
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1SRC;
+
+	// Включить сигнал ошибки
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1E;
+
+
+	// Источник - AC6 - Uout protect
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3SRC;
+
+	// Включить сигнал ошибки
+	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3E;
+
+	// Включение прерывания по ошибке3
+	HRTIM1->sCommonRegs.IER |= HRTIM_IER_FLT3;
+
+	// Состояние при ошибке - 0
+	//HRTIM1->sTimerxRegs[3].OUTxR |=  HRTIM_OUTR_FAULT1_1;
+//	HRTIM1->sTimerxRegs[4].OUTxR |=  HRTIM_OUTR_FAULT1_1;
+
+	HRTIM1->sTimerxRegs[3].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
+	HRTIM1->sTimerxRegs[4].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
+
+
+
 
 	// Период таймера
 	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) (144e6 * 32.f / Fsw));
@@ -125,19 +152,7 @@ void init_timer(void)
 	//HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
 
-	// --- Fault ----------------
 
-	// Источник - AC2 - IL protect
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1SRC;
-
-	// Включить сигнал ошибки
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1E;
-
-	// Источник - AC6 - Uout protect
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3SRC;
-
-	// Включить сигнал ошибки
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3E;
 
 
 

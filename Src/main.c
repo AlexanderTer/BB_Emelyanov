@@ -20,6 +20,7 @@ int main(void)
 	init_spi();
 	init_ac();
 	init_timer();
+	set_Duty();
 	init_dma();
 	init_adc();
 
