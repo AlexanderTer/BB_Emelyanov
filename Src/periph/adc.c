@@ -22,9 +22,11 @@ void init_adc(void)
 
 	// Начать калибровку и дождаться её окончания
 	ADC1->CR |= ADC_CR_ADCAL;
-	while (ADC1->CR & ADC_CR_ADCAL);
+
+	uint32_t i = 0;
+	while ((ADC1->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 	ADC2->CR |= ADC_CR_ADCAL;
-	while (ADC2->CR & ADC_CR_ADCAL);
+	while ((ADC2->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 
 	// Выбор для старта преобразования внешний триггер
 	ADC1->CFGR |= ADC_CFGR_EXTEN_0;
@@ -35,34 +37,34 @@ void init_adc(void)
 	ADC2->CFGR |= ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2;
 
 
-
 	// Выбор канала первого преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) -Vout
+	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) - Vout
 	ADC2->SQR1 |= ADC_SQR1_SQ1_0 | ADC_SQR1_SQ1_2 | ADC_SQR1_SQ1_3; // CH IN13 (1101) - Il
 
 	// Выбор канала второго преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_1; // CH IN3 (11) - Inj
+	ADC1->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_2 | ADC_SQR1_SQ2_3; // CH IN13 (1101) - Vin
+	ADC2->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_2; 					// CH IN5 (101) - Inj
 
-	// Выбор канала третьего преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ3_0 | ADC_SQR1_SQ3_2 | ADC_SQR1_SQ3_3; // CH IN13 (1101) - Vin
 
 
 	// Количество преобразований после получения триггера выборки
-	ADC1->SQR1 |= ADC_SQR1_L_1; // 3 Преобразования
-	ADC2->SQR1 &= ~ADC_SQR1_L;  // 1 Преобразование
+	ADC1->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
+	ADC2->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
 
-	// Устанавливаем длительность преобразования в тактах АЦП: 19.5 CLK
-	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2| ADC_SMPR1_SMP3_2; // 1е 2е 3е преобразование
-	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2;// 1е преобразование
+	// Устанавливаем длительность преобразования в тактах АЦП:
+	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2; // 1е 2е преобразование 19.5 CLK
+	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2; // 1е 2е преобразование 19.5 CLK
 
-	// DMA Circular Mode selected
+	// Выбор кругового режима ДМА
 	ADC1->CFGR |= ADC_CFGR_DMACFG;
 	ADC2->CFGR |= ADC_CFGR_DMACFG;
 
-	// Direct memory access enable
+	// Включение прямого доступа к памяти
 	ADC1->CFGR |= ADC_CFGR_DMAEN;
 	ADC2->CFGR |= ADC_CFGR_DMAEN;
 
+	// Включение внутреннего ИОН
+	ADC12_COMMON->CCR |= ADC_CCR_VREFEN;
 
 	// Включить АЦП
 	ADC1->CR |= ADC_CR_ADEN;

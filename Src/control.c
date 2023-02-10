@@ -81,32 +81,31 @@ void HRTIM1_FLT_IRQHandler(void)
 
 
 // ------------- Главное прерывание - обработчик -------------
-void DMA1_Channel1_IRQHandler(void)
+void DMA1_Channel2_IRQHandler(void)
 {
 	GPIOB->ODR |= (1 << 7);
 
-	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos; //сбрасываем флаг прерывания
+		DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos; //сбрасываем флаг прерывания
 
-	// Обработка преобразований ацп
-	ADC_Data_Hanler();
+		// Обработка преобразований ацп
+		ADC_Data_Hanler();
 
-	// Проверка программных защит
-	//software_protection_monitor();
+		// Проверка программных защит
+		//software_protection_monitor();
 
-	//float il_ref = 5.f;
-	//float error_current = il_ref - BB_Measure.data.iL;
-///
-	//BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
+		//float il_ref = 5.f;
+		//float error_current = il_ref - BB_Measure.data.iL;
+	///
+		//BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
 
 
 
-	// Применение рачётного коэффициента заполнения к модулятору
-	//if (BB_State != FAULT) set_Duty();
+		// Применение рачётного коэффициента заполнения к модулятору
+		//if (BB_State != FAULT) set_Duty();
 
-	GPIOB->ODR &= ~(1 << 7);
+		GPIOB->ODR &= ~(1 << 7);
 
-}// end DMA1_Channel1_IRQHandler ---------------------------------------------
-
+}
 
 
 /**
@@ -115,10 +114,11 @@ void DMA1_Channel1_IRQHandler(void)
 void ADC_Data_Hanler(void)
 {
 	extern volatile unsigned int ADC_Buffer[4];
-	BB_Measure.data.iL = BB_Measure.scale.iL * ADC_Buffer[0] + BB_Measure.shift.iL;
-	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC_Buffer[1] + BB_Measure.shift.uout);
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC_Buffer[2] + BB_Measure.shift.inj;
-	BB_Measure.data.uin = BB_Measure.scale.uin * ADC_Buffer[3] + BB_Measure.shift.uin;
+	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC_Buffer[0] + BB_Measure.shift.uout);
+	BB_Measure.data.uin = BB_Measure.scale.uin * ADC_Buffer[1] + BB_Measure.shift.uin;
+	BB_Measure.data.iL = BB_Measure.scale.iL * ADC_Buffer[2] + BB_Measure.shift.iL;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC_Buffer[3] + BB_Measure.shift.inj;
+
 
 	// Вычисление мощности
 	//if (BB_Control.duty_Boost > DUTY_MIN_BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - BB_Control.duty_Boost);

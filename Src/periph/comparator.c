@@ -23,7 +23,7 @@ void init_ac(void)
 	// Включение модуля компаратора
 	COMP6->CSR |= COMP6_CSR_COMP6EN;
 
-	NVIC_EnableIRQ(COMP2_IRQn);
-	NVIC_EnableIRQ(COMP4_6_IRQn);
-	NVIC_EnableIRQ(HRTIM1_FLT_IRQn);
+//	NVIC_EnableIRQ(COMP2_IRQn);
+	//NVIC_EnableIRQ(COMP4_6_IRQn);
+	//NVIC_EnableIRQ(HRTIM1_FLT_IRQn);
 }

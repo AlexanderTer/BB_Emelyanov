@@ -31,7 +31,7 @@ void init_GPIO(void)
 
 	// Analog init
 	init_GPIO_Analog(GPIOA,3);		 // ADC1 IN4   Uout
-	init_GPIO_Analog(GPIOA,2);       // ADC1 IN3   Inj
+	init_GPIO_Analog(GPIOC,4);       // ADC2 IN5   Inj
 	init_GPIO_Analog(GPIOB,13);      // ADC1 IN13  Uin
 	init_GPIO_Analog(GPIOB,12);	     // ADC2 IN13  Il
 	init_GPIO_Analog(GPIOA,7);	     // AC2 IN+ Il protect

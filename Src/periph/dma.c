@@ -14,18 +14,18 @@ void init_dma(void)
 	DMA1_Channel2->CPAR = (unsigned int) &(ADC2->DR); // Il
 
 	// Настраиваем адрес приёмника данных
-	DMA1_Channel1->CMAR = (unsigned int) &ADC_Buffer[1];
-	DMA1_Channel2->CMAR = (unsigned int) &ADC_Buffer[0];
+	DMA1_Channel1->CMAR = (unsigned int) &ADC_Buffer[0]; // 0 - Uout 1 - Vin
+	DMA1_Channel2->CMAR = (unsigned int) &ADC_Buffer[2]; // 2 - Il 3 - Inj
 
 	// Настраиваем количество данных для передачи (0 - 216-1)
-	DMA1_Channel1->CNDTR = 3;
-	DMA1_Channel2->CNDTR = 1;
+	DMA1_Channel1->CNDTR = 2;
+	DMA1_Channel2->CNDTR = 2;
 
 	// Установить приоритет
-	DMA1_Channel1->CCR |= DMA_CCR_PL_1; //Uout -  Hhigh (10)
-	DMA1_Channel2->CCR |= DMA_CCR_PL_0 | DMA_CCR_PL_1; //Il - Veri high (11)
+	DMA1_Channel1->CCR |=  DMA_CCR_PL_0 | DMA_CCR_PL_1; //Uout -  Очень высокий (11)
+	DMA1_Channel2->CCR |=  DMA_CCR_PL_1; //Il - Высокий (10)
 
-	// Направление передачи данных - 0 их переферии в память
+	// Направление передачи данных - 0 из переферии в память
 	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;
 	DMA1_Channel2->CCR &= ~DMA_CCR_DIR;
 
@@ -35,7 +35,7 @@ void init_dma(void)
 
 	// Режим увеличения адреса памяти
 	DMA1_Channel1->CCR |= DMA_CCR_MINC;   // Включён
-	DMA1_Channel2->CCR &= ~DMA_CCR_MINC; // Отключён
+	DMA1_Channel2->CCR |= DMA_CCR_MINC;   // Включён
 
 	// Режим увеличения адреса переферии отключён
 	DMA1_Channel1->CCR &= ~DMA_CCR_PINC;
@@ -50,14 +50,17 @@ void init_dma(void)
 	DMA1_Channel2->CCR |= DMA_CCR_PSIZE_1;
 
 	// Разрешение прерывания по окончанию передачи
-	DMA1_Channel1->CCR |= DMA_CCR_TCIE;
+	//DMA1_Channel1->CCR |= DMA_CCR_TCIE;
+	DMA1_Channel2->CCR |= DMA_CCR_TCIE;
 
 	// Включение каналов
 	DMA1_Channel1->CCR |= DMA_CCR_EN;
 	DMA1_Channel2->CCR |= DMA_CCR_EN;
 
 	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos;
-	NVIC_EnableIRQ(DMA1_Channel1_IRQn); //разрешаем прерывания
-	//NVIC_EnableIRQ(DMA1_Channel2_IRQn); //разрешаем прерывания
+	DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos;
+
+	//NVIC_EnableIRQ(DMA1_Channel1_IRQn); //разрешаем прерывания
+	NVIC_EnableIRQ(DMA1_Channel2_IRQn); //разрешаем прерывания
 
 }
