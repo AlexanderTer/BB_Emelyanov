@@ -22,43 +22,42 @@ void init_timer(void)
 	RCC->APB2ENR |= RCC_APB2ENR_HRTIM1EN;
 
 	//Калибровка таймера
-	HRTIM1_COMMON->DLLCR |= HRTIM_DLLCR_CALRTE_0 | HRTIM_DLLCR_CALRTE_1; // Период калибровки наименьший по рекомендации (14 us)
-	HRTIM1_COMMON->DLLCR |= HRTIM_DLLCR_CALEN; 			// Разрешение калибровки
-	HRTIM1_COMMON->DLLCR |= HRTIM_DLLCR_CAL; 				// Старт калибровки
-	while (!(HRTIM1_COMMON->ISR & HRTIM_ISR_DLLRDY));					// Ожидание кокнчание калибровки
+	HRTIM1->sCommonRegs.DLLCR |= HRTIM_DLLCR_CALRTE_0 | HRTIM_DLLCR_CALRTE_1; 	// Период калибровки наименьший по рекомендации (14 us)
+	HRTIM1->sCommonRegs.DLLCR |= HRTIM_DLLCR_CALEN; 							// Разрешение калибровки
+	HRTIM1->sCommonRegs.DLLCR |= HRTIM_DLLCR_CAL; 								// Старт калибровки
+	while (!(HRTIM1->sCommonRegs.ISR & HRTIM_ISR_DLLRDY));						// Ожидание окончания калибровки
 
 	// -- Master timer --------------------------------------------------------------
 
+	// Период таймера
+	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) PERIOD);
 
 	// --- Fault ------------------------------------------------
 
-	// Источник - AC2 - IL protect
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1SRC;
+//	// Источник - AC2 - IL protect
+//	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1SRC;
+//
+//	// Включить сигнал ошибки
+//	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1E;
+//
+//
+//	// Источник - AC6 - Uout protect
+//	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3SRC;
+//
+//	// Включить сигнал ошибки
+//	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3E;
+//
+//	// Включение прерывания по ошибке3
+//	HRTIM1->sCommonRegs.IER |= HRTIM_IER_FLT3;
+//
+//	// Состояние при ошибке - 0
+//	//HRTIM1->sTimerxRegs[3].OUTxR |=  HRTIM_OUTR_FAULT1_1;
+////	HRTIM1->sTimerxRegs[4].OUTxR |=  HRTIM_OUTR_FAULT1_1;
+//
+//	HRTIM1->sTimerxRegs[3].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
+//	HRTIM1->sTimerxRegs[4].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
 
-	// Включить сигнал ошибки
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT1E;
 
-
-	// Источник - AC6 - Uout protect
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3SRC;
-
-	// Включить сигнал ошибки
-	HRTIM1->sCommonRegs.FLTINR1 |= HRTIM_FLTINR1_FLT3E;
-
-	// Включение прерывания по ошибке3
-	HRTIM1->sCommonRegs.IER |= HRTIM_IER_FLT3;
-
-	// Состояние при ошибке - 0
-	//HRTIM1->sTimerxRegs[3].OUTxR |=  HRTIM_OUTR_FAULT1_1;
-//	HRTIM1->sTimerxRegs[4].OUTxR |=  HRTIM_OUTR_FAULT1_1;
-
-	HRTIM1->sTimerxRegs[3].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
-	HRTIM1->sTimerxRegs[4].FLTxR |= HRTIM_FLTR_FLT1EN | HRTIM_FLTR_FLT3EN ;
-
-
-
-	// Период таймера
-	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) PERIOD);
 
 
 
@@ -69,7 +68,7 @@ void init_timer(void)
 	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
-	HRTIM1->sTimerxRegs[3].PERxR = (uint32_t) ((float) PERIOD); //15360
+	HRTIM1->sTimerxRegs[3].PERxR = (uint32_t) ((float) PERIOD); // 15360
 
 
 	// Значение регистров сравнения 1
@@ -80,10 +79,6 @@ void init_timer(void)
 
 	// Событие спадающего фронта
 	HRTIM1->sTimerxRegs[3].RSTx1R |= HRTIM_RST1R_PER;
-
-	// Инверсия выходов
-//	HRTIM1->sTimerxRegs[3].OUTxR |=  HRTIM_OUTR_POL1 | HRTIM_OUTR_POL2;
-
 
 	// Включение Deadtime
 	HRTIM1->sTimerxRegs[3].OUTxR |= HRTIM_OUTR_DTEN;
@@ -108,7 +103,7 @@ void init_timer(void)
 	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
-	HRTIM1->sTimerxRegs[4].PERxR = (uint32_t) ((float) PERIOD); //15360
+	HRTIM1->sTimerxRegs[4].PERxR = (uint32_t) ((float) PERIOD); // 15360
 
 	// Значение регистров сравнения
 	HRTIM1->sTimerxRegs[4].CMP1xR = 0;
@@ -118,9 +113,6 @@ void init_timer(void)
 
 	// Событие спадающего фронта
 	HRTIM1->sTimerxRegs[4].RSTx1R |= HRTIM_RST1R_PER;
-
-	// Инверсия выходов
-	//HRTIM1->sTimerxRegs[4].OUTxR |= HRTIM_OUTR_POL1 | HRTIM_OUTR_POL2;
 
 	// Включение Deadtime
 	HRTIM1->sTimerxRegs[4].OUTxR |= HRTIM_OUTR_DTEN;

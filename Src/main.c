@@ -6,6 +6,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "adc.h"
+#include "dac.h"
 #include "dma.h"
 #include "control.h"
 #include "comp.h"
@@ -20,12 +21,15 @@ int main(void)
 	init_RCC();
 	init_GPIO();
 	init_spi();
-	init_comp();
+	//init_comp();
 	init_timer();
 	set_Duty();
 	init_dma();
 	init_adc();
+	init_dac();
 	init_interrupt();
+
+
 
 	//  Записываем конфигурацию датчика
 	// -Режим непрерывного измерения
@@ -41,6 +45,7 @@ int main(void)
 	//	TEMPERATURE = read_DS1722(0x02);
 		for (int i = 0; i < 10000; i++){}
 
+		//DAC2->SWTRIGR |= DAC_SWTRIGR_SWTRIG1;
 	//	if (TEMPERATURE < 30) GPIOB->ODR &= ~(1 << 7);
 	//	else GPIOB->ODR |= (1 << 7);
 

@@ -55,6 +55,18 @@ Measure_Struct BB_Measure =
 				.uin =  K_ADC * 16.6,
 		},
 
+		.dac[0] =
+		{
+				.shift = 0.,
+				.scale = 4095.f / 22.f,
+		},
+
+		.dac[1] =
+		{
+				.shift = 0.,
+				.scale = 4095.f / 14.f,
+		},
+
 };// end Measure_Struct BB_Measure ------------------------------------------
 
 
@@ -90,6 +102,8 @@ void DMA1_Channel2_IRQHandler(void)
 		// Обработка преобразований ацп
 		ADC_Data_Hanler();
 
+		DAC1->DHR12R2 =  BB_Measure.data.uout * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+		DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 		// Проверка программных защит
 		//software_protection_monitor();
 

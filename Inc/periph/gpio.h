@@ -4,8 +4,8 @@
 #include "stm32f3xx.h"
 
 void init_GPIO(void);
-void init_GPIO_Output(GPIO_TypeDef *gpio, unsigned int pin);
-void init_GPIO_AFunction(GPIO_TypeDef *gpio, unsigned int pin, unsigned int AF);
-void init_GPIO_Analog(GPIO_TypeDef *gpio, unsigned int pin);
+void init_GPIO_Output(GPIO_TypeDef *, unsigned int pin);
+void init_GPIO_AFunction(GPIO_TypeDef *, unsigned int pin, unsigned int AF);
+void init_GPIO_Analog(GPIO_TypeDef *, unsigned int pin);
 
 #endif

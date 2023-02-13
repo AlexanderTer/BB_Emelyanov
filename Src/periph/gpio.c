@@ -39,24 +39,44 @@ void init_GPIO(void)
 	init_GPIO_Analog(GPIOB,13);      // ADC1 IN13  Uin
 	init_GPIO_Analog(GPIOB,12);	     // ADC2 IN13  Il
 
-	//init_GPIO_Analog(GPIOA,7);	     // AC2 IN+ Il protect
-	init_GPIO_Analog(GPIOB,11);	    	 // AC6 IN+ Vout protect
-	init_GPIO_AFunction(GPIOC,6,7);		 // COMP6 out
+	//init_GPIO_Analog(GPIOA,7);	 // AC2 IN+ Il protect
+	init_GPIO_Analog(GPIOB,11);	     // AC6 IN+ Vout protect
+	init_GPIO_AFunction(GPIOC,6,7);  // COMP6 out
+
+
+	// DAC
+	init_GPIO_Analog(GPIOA,5);	     // DAC1 канал 2
+	init_GPIO_Analog(GPIOA,6);		 // DAC2 канал 1
 
 }
 
+
+/**
+ * \brief Инициализация вывода в режим цифрового выхода
+ *
+ * \param gpio: указатель на структуру порта
+ * \param pin: номер вывода
+ *
+ */
 void init_GPIO_Output(GPIO_TypeDef *gpio, unsigned int pin)
 {
 	// Сброс настроек пина перед инициализацией
-	gpio->MODER &= ~(0b11 << (2*pin));
+	gpio->MODER &= ~(0x3 << (2*pin));
 
 	gpio->MODER |= 1 << (2 * pin);
 }
 
+/**
+ * \brief Инициализация вывода в режим альтернативной функции
+ *
+ * \param gpio: указатель на структуру порта
+ * \param pin: номер вывода
+ * \param AF: номер альтернативной функции
+ */
 void init_GPIO_AFunction(GPIO_TypeDef *gpio, unsigned int pin, unsigned int AF)
 {
 	// Сброс настроек пина перед инициализацией
-	gpio->MODER &= ~(0b11 << (2*pin));
+	gpio->MODER &= ~(0x3 << (2*pin));
 
 	if (pin < 8)
 		gpio->AFR[0] |= AF << (4 * pin);
@@ -66,10 +86,17 @@ void init_GPIO_AFunction(GPIO_TypeDef *gpio, unsigned int pin, unsigned int AF)
 	gpio->OSPEEDR |= 3 << (2 * pin);
 }
 
+/**
+ * \brief Инициализация вывода в аналоговый режим
+ *
+ * \param gpio: указатель на структуру порта
+ * \param pin: номер вывода
+ *
+ */
 void init_GPIO_Analog(GPIO_TypeDef *gpio, unsigned int pin)
 {
 	// Сброс настроек пина перед инициализацией
-	gpio->MODER &= ~(0b11 << (2*pin));
+	gpio->MODER &= ~(0x3 << (2*pin));
 
 	gpio->MODER |= 3 << (2 * pin);
 }

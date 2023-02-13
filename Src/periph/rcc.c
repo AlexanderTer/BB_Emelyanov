@@ -2,7 +2,15 @@
 #include "stm32f3xx.h"
 
 /**
- *\brief Инициализация системы тактирования
+ *\brief	 	Инициализация модуля тактирования.
+ *
+ *\details 		Частота внешнего генератора = 8 МГц.
+ *				Системная частота = 72 МГц.
+ *				Делитель шины APB1 = 2.
+ *				Делитель шины APB2 = 1.
+ *				Множитель PLL = 9.
+ *				Делитель системной частоты = 1.
+ *
  */
 void init_RCC(void)
 {
@@ -22,15 +30,13 @@ void init_RCC(void)
 	// Обновление переменной с частотой тактирования
 	SystemCoreClockUpdate();
 
-	// Power interface clock enable
+	// Включение питания RCC
 	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 
 	// Включение внутреннего генератора 8 МГц
-	RCC->CR |= RCC_CR_HSEON;  // HSE on
+	RCC->CR |= RCC_CR_HSEON;
 	while (!(RCC->CR & RCC_CR_HSERDY));
 	RCC->CR |= RCC_CR_HSEBYP; // HSE crystal oscillator  bypassed
-
-
 
 	// Выключение PLL
 	RCC->CR &= ~RCC_CR_PLLON;
@@ -46,8 +52,8 @@ void init_RCC(void)
 	RCC->CFGR |= RCC_CFGR_PLLSRC_HSE_PREDIV;
 	//RCC->CFGR |= RCC_CFGR_MCO_PLL; // Вывод частот на порт PA8
 
-	// Настройка flash на высокую частоту
-	FLASH->ACR |= FLASH_ACR_LATENCY_1;
+	// Настройка latancy на 2 для 72 МГц
+	FLASH->ACR |= FLASH_ACR_LATENCY_2;
 
 	RCC->CR |= RCC_CR_PLLON;
 	while (!(RCC->CR & RCC_CR_PLLRDY));

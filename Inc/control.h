@@ -6,8 +6,8 @@
 #define SET_SHIFTS_MAX_COUNT ((unsigned int)(0.5 * 300.e3))
 
 #define Fsw (100e3f)			// Частота коммутации, Гц
-#define F_HIRES (144e6f * 32.f) // Частота таймера высокого разрешения, Гц
-#define PERIOD (F_HIRES / Fsw)
+#define F_HIRES (144e6f * 32.f) // Эквивалентная частота таймера высокого разрешения, Гц
+#define PERIOD (F_HIRES / Fsw)  // Период для записи в регистр периода
 
 
 
@@ -57,6 +57,14 @@ typedef struct
 	// shift - смещение
 	// scale - коэффициент масштабирования
 	// sum - переменная для накопления при автоопределении смещения
+
+	struct
+	{
+		float data;			// Значение переменной для вывода на ЦАП
+		float shift;		// Смещение значения переменной
+		float scale;		// Коэффициент масштабирования переменной
+
+	} dac[2]; // Структура с параметрами ЦАП1 и ЦАП2
 
 }Measure_Struct; // Структура с параметрами измерений
 extern Measure_Struct BB_Measure;
