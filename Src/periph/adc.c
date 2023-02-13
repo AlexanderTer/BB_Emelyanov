@@ -1,6 +1,9 @@
 #include "stm32f3xx.h"
 #include "adc.h"
 
+/**
+ *\brief Инициализация АЦП
+ */
 void init_adc(void)
 {
 	// Включить тактирование АЦП
@@ -22,7 +25,6 @@ void init_adc(void)
 
 	// Начать калибровку и дождаться её окончания
 	ADC1->CR |= ADC_CR_ADCAL;
-
 	uint32_t i = 0;
 	while ((ADC1->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 	ADC2->CR |= ADC_CR_ADCAL;

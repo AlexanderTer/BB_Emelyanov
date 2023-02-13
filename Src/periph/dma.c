@@ -4,6 +4,9 @@
 
 volatile unsigned int ADC_Buffer[4]; // 0 - Il 1 - Uout 2 - Inj 3 - Uin
 
+/*
+ * \Инициализация контроллера прямого доступа к памяти
+ */
 void init_dma(void)
 {
 	// Тактирование DMA
@@ -60,7 +63,5 @@ void init_dma(void)
 	DMA1->IFCR = 1 << DMA_IFCR_CTCIF1_Pos;
 	DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos;
 
-	//NVIC_EnableIRQ(DMA1_Channel1_IRQn); //разрешаем прерывания
-	NVIC_EnableIRQ(DMA1_Channel2_IRQn); //разрешаем прерывания
 
 }

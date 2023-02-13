@@ -1,6 +1,9 @@
 #include "rcc.h"
 #include "stm32f3xx.h"
 
+/**
+ *\brief Инициализация системы тактирования
+ */
 void init_RCC(void)
 {
 

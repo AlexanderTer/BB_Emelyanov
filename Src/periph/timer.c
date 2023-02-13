@@ -3,11 +3,15 @@
 #include "control.h"
 
 
-#define Fsw (100e3)
-#define DEADTIME (35e-9) // 868 ps resolution  ( ! 222ns MAX ! )
 
 
+#define DEADTIME (35e-9f) 		// Величина Deadtime, сек ( ! 222ns MAX ! )
+#define DEADTIME_RES (868e-12f) // Разрешение Deadtime, сек
 
+
+/**
+ * \brief Инициализация таймера высокого разрешения
+ */
 void init_timer(void)
 {
 
@@ -53,9 +57,11 @@ void init_timer(void)
 
 
 
-
 	// Период таймера
-	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) (144e6 * 32.f / Fsw));
+	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) PERIOD);
+
+
+
 
 	// -- Timer D - Boost timer -------------------------------------------------------
 
@@ -63,7 +69,7 @@ void init_timer(void)
 	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
-	HRTIM1->sTimerxRegs[3].PERxR = (uint32_t) ((float) (144e6 * 32.f / Fsw)); //15360
+	HRTIM1->sTimerxRegs[3].PERxR = (uint32_t) ((float) PERIOD); //15360
 
 
 	// Значение регистров сравнения 1
@@ -79,14 +85,14 @@ void init_timer(void)
 //	HRTIM1->sTimerxRegs[3].OUTxR |=  HRTIM_OUTR_POL1 | HRTIM_OUTR_POL2;
 
 
-	// Deadtime enable
+	// Включение Deadtime
 	HRTIM1->sTimerxRegs[3].OUTxR |= HRTIM_OUTR_DTEN;
 
-	// Rasing Deadtime
-	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9));
+	// Спадающий фронт Deadtime
+	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / DEADTIME_RES));
 
-	// Falling Deadtime
-	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9)) << 16;
+	// Нарастающий фронт Deadtime
+	HRTIM1->sTimerxRegs[3].DTxR |= (uint8_t) ((float) (DEADTIME / DEADTIME_RES)) << 16;
 
 	// Подключение результата сравнения на выход
 	HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
@@ -96,16 +102,13 @@ void init_timer(void)
 
 
 
-
-
-
 	// -- Timer E - Buck timer -------------------------------------------------------
 
 	// Обновление регистра сравнения по сбросу таймера
 	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_TRSTU;
 
 	// Период таймера
-	HRTIM1->sTimerxRegs[4].PERxR = (uint32_t) ((float) (144e6 * 32.f / Fsw)); //15360
+	HRTIM1->sTimerxRegs[4].PERxR = (uint32_t) ((float) PERIOD); //15360
 
 	// Значение регистров сравнения
 	HRTIM1->sTimerxRegs[4].CMP1xR = 0;
@@ -119,14 +122,14 @@ void init_timer(void)
 	// Инверсия выходов
 	//HRTIM1->sTimerxRegs[4].OUTxR |= HRTIM_OUTR_POL1 | HRTIM_OUTR_POL2;
 
-	// Deadtime enable
+	// Включение Deadtime
 	HRTIM1->sTimerxRegs[4].OUTxR |= HRTIM_OUTR_DTEN;
 
-	// Rasing Deadtime
-	HRTIM1->sTimerxRegs[4].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9));
+	// Нарастающий фронт Deadtime
+	HRTIM1->sTimerxRegs[4].DTxR |= (uint8_t) ((float) (DEADTIME / DEADTIME_RES));
 
-	// Falling Deadtime
-	HRTIM1->sTimerxRegs[4].DTxR |= (uint8_t) ((float) (DEADTIME / 0.868e-9)) << 16;
+	// Спадающий фронт Deadtime
+	HRTIM1->sTimerxRegs[4].DTxR |= (uint8_t) ((float) (DEADTIME / DEADTIME_RES)) << 16;
 
 	// Подключение результата сравнения на выход
 	HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN;
@@ -137,7 +140,7 @@ void init_timer(void)
 
 	//--- Триггеры выборки
 	// Значение регистров сравнения 2 - Положение триггера выборки АЦП
-	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.75));
+	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) PERIOD) * (0.75));
 
 	// 101 - Timer E источник триггера выборки для ADC1
 	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC1USRC_0 | HRTIM_CR1_ADC1USRC_2;
@@ -145,16 +148,11 @@ void init_timer(void)
 	// 101 - Timer E источник триггера выборки для ADC2
 	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC2USRC_0 | HRTIM_CR1_ADC2USRC_2;
 
-	// ADC1 trigger 1 event: Timer E compare 2
+	// Триггер ADC1: Timer E compare 2
 	HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
-	// ADC2 trigger 1 event: Timer E compare 2
+	// Триггер ADC2: Timer E compare 2
 	//HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
-
-
-
-
-
 
 	// Буферизация
 	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;

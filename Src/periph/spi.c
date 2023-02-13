@@ -1,6 +1,9 @@
 #include "stm32f3xx.h"
 #include "spi.h"
 
+/**
+ * \brief Инициализация SPI
+ */
 void init_spi(void)
 {
 	// Тактирование SPI1

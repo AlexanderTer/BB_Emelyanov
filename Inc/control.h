@@ -5,8 +5,9 @@
 
 #define SET_SHIFTS_MAX_COUNT ((unsigned int)(0.5 * 300.e3))
 
-#define Fsw (100e3)
-#define PERIOD (144e6 * 32.f / Fsw)
+#define Fsw (100e3f)			// Частота коммутации, Гц
+#define F_HIRES (144e6f * 32.f) // Частота таймера высокого разрешения, Гц
+#define PERIOD (F_HIRES / Fsw)
 
 
 
