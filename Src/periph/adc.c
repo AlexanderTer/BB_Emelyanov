@@ -54,8 +54,8 @@ void init_adc(void)
 	ADC2->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
 
 	// Устанавливаем длительность выборки в тактах АЦП:
-	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2; // 1е 2е преобразование 19.5 CLK
-	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2; // 1е 2е преобразование 19.5 CLK
+	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2; // 1е 2е преобразование 19.5 CLK
+	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2; // 1е 2е преобразование 19.5 CLK
 
 	// Выбор кругового режима ДМА
 	ADC1->CFGR |= ADC_CFGR_DMACFG;

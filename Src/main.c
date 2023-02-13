@@ -43,7 +43,7 @@ int main(void)
 
 		// Получаем температуру с датчика
 	//	TEMPERATURE = read_DS1722(0x02);
-		for (int i = 0; i < 10000; i++){}
+	//	for (int i = 0; i < 10000; i++){}
 
 		//DAC2->SWTRIGR |= DAC_SWTRIGR_SWTRIG1;
 	//	if (TEMPERATURE < 30) GPIOB->ODR &= ~(1 << 7);
@@ -55,7 +55,7 @@ int main(void)
 //		GPIOC->ODR ^= (1 << 10) | (1 << 11) | (1 << 12);
 
 		// Проверяем PB1 (SW1) на ноль.
-		if (!(GPIOD->IDR & (1 << 2))) BB_Measure.count = SET_SHIFTS_MAX_COUNT;
+		//if (!(GPIOD->IDR & (1 << 2))) BB_Measure.count = SET_SHIFTS_MAX_COUNT;
 
 
 	}

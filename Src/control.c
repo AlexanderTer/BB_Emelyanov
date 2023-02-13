@@ -42,7 +42,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL = 0,
 				.uout = 12.1324 / K_ADC,
-				.inj = 0,
+				.inj = -1.65f,
 				.uin = 0,
 		},
 
@@ -97,10 +97,13 @@ void DMA1_Channel2_IRQHandler(void)
 {
 	GPIOB->ODR |= (1 << 7);
 
-		DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos; //сбрасываем флаг прерывания
+	DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos; //сбрасываем флаг прерывания
 
-		// Обработка преобразований ацп
-		ADC_Data_Hanler();
+	// Обработка преобразований ацп
+	ADC_Data_Hanler();
+
+	// Автоопределение смещения
+
 
 		DAC1->DHR12R2 =  BB_Measure.data.uout * BB_Measure.dac[0].scale; // DAC1 CH2  X16
 		DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
@@ -184,22 +187,6 @@ void software_protection_monitor(void)
 
 
 // Функция автоопределения смещения для ацп
-void set_shifts(void) {
-	if (BB_Measure.count == 0)
-		return;
-
-	// Обнуление текущего смещения и суммы при старте алгоритма автоопределения смещения.
-	if (BB_Measure.count == SET_SHIFTS_MAX_COUNT)
-		BB_Measure.shift.inj = BB_Measure.sum.inj = 0;
-
-	// Накапливаем сумму.
-	BB_Measure.sum.inj += BB_Measure.data.inj
-			* (1.f / SET_SHIFTS_MAX_COUNT);
-
-	// Декремент счётчика и проверка окончания автоопределения смещений.
-	if (--BB_Measure.count == 0)
-		BB_Measure.shift.inj = -BB_Measure.sum.inj;
-}
 
 
 
