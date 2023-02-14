@@ -28,6 +28,7 @@ void init_adc(void)
 	uint32_t i = 0;
 	while ((ADC1->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 	ADC2->CR |= ADC_CR_ADCAL;
+	i = 0;
 	while ((ADC2->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 
 	// Выбор для старта преобразования внешний триггер
@@ -54,8 +55,8 @@ void init_adc(void)
 	ADC2->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
 
 	// Устанавливаем длительность выборки в тактах АЦП:
-	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2; // 1е 2е преобразование 19.5 CLK
-	ADC2->SMPR1 |= ADC_SMPR1_SMP1_2 | ADC_SMPR1_SMP2_2; // 1е 2е преобразование 19.5 CLK
+	ADC1->SMPR1 |= (0x4 << ADC_SMPR1_SMP1_Pos) | (0x4 << ADC_SMPR1_SMP2_Pos); // 1е 2е преобразование 19.5 CLK
+	ADC2->SMPR1 |= (0x4 << ADC_SMPR1_SMP1_Pos) | (0x4 << ADC_SMPR1_SMP2_Pos); // 1е 2е преобразование 19.5 CLK
 
 	// Выбор кругового режима ДМА
 	ADC1->CFGR |= ADC_CFGR_DMACFG;

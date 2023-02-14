@@ -25,8 +25,8 @@ void init_dma(void)
 	DMA1_Channel2->CNDTR = 2;
 
 	// Установить приоритет
-	DMA1_Channel1->CCR |=  DMA_CCR_PL_0 | DMA_CCR_PL_1; //Uout -  Очень высокий (11)
-	DMA1_Channel2->CCR |=  DMA_CCR_PL_1; //Il - Высокий (10)
+	DMA1_Channel1->CCR |=   DMA_CCR_PL_1; //Uout -   Высокий (10)
+	DMA1_Channel2->CCR |= DMA_CCR_PL_0 | DMA_CCR_PL_1; //Il - Очень высокий (11)
 
 	// Направление передачи данных - 0 из переферии в память
 	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;

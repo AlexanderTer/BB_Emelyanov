@@ -23,7 +23,6 @@ int main(void)
 	init_spi();
 	//init_comp();
 	init_timer();
-	set_Duty();
 	init_dma();
 	init_adc();
 	init_dac();
