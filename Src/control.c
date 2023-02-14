@@ -70,20 +70,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.4f,
+				.inj =  K_ADC * 0.2f,
 				.uin =  K_ADC * 16.6f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 7.f,
+				.scale = 4095.f / 10.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 21.f,
+				.scale = 4095.f / 10.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -133,7 +133,8 @@ void DMA1_Channel2_IRQHandler(void)
 		// ----- Расчёт контура напряжения ---------
 		BB_Control.uout_ref = 20.0f;
 		BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-		BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+		float il_B = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+		BB_Control.iL_ref = il_B + BB_Measure.data.inj;
 		// ----- Расчёт контура тока ---------
 
 		BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
@@ -143,7 +144,7 @@ void DMA1_Channel2_IRQHandler(void)
 
 		// Вывод данных на ЦАП1 ЦАП2
 		DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-		DAC2->DHR12R1 = (BB_Measure.data.uout) * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+		DAC2->DHR12R1 = il_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 		// Применение рачётного коэффициента заполнения к модулятору
