@@ -11,7 +11,7 @@ void init_GPIO(void)
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
 	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
-
+	RCC->AHBENR |= RCC_AHBENR_GPIODEN;
 
 	// LED
 	init_GPIO_Output(GPIOA, 15); 	//  КОРРЕКТНО НЕ РАБОТАЕТ ПОЧЕМУТО НА ВСЕХ ПЛАТАХ!!! VD34
@@ -48,6 +48,7 @@ void init_GPIO(void)
 	init_GPIO_Analog(GPIOA,5);	     // DAC1 канал 2
 	init_GPIO_Analog(GPIOA,6);		 // DAC2 канал 1
 
+	GPIOD->MODER &= ~(0x3 << (2*2));
 }
 
 

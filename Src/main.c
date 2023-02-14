@@ -50,11 +50,14 @@ int main(void)
 
 		//setDuty (0.5);
 
-		GPIOA->ODR ^= (1 << 15);
+		//GPIOA->ODR ^= (1 << 15);
 //		GPIOC->ODR ^= (1 << 10) | (1 << 11) | (1 << 12);
 
 		// Проверяем PB1 (SW1) на ноль.
-		//if (!(GPIOD->IDR & (1 << 2))) BB_Measure.count = SET_SHIFTS_MAX_COUNT;
+		if (!(GPIOD->IDR & (1 << 2)))
+			{
+				BB_Measure.count = SET_SHIFTS_MAX_COUNT;
+			}
 
 
 	}

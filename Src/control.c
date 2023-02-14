@@ -5,8 +5,10 @@
 #include "timer.h"
 #include <math.h>
 
-#define DUTY_MIN_BOOST  (0.1)//!!
-#define TSW  (1. / FSW)
+#define DUTY_MIN_BOOST  (0.1f)//!!
+#define F_CALC (25000.f)
+#define T_CALC  (1.f / F_CALC)
+#define TRIG_KOEF (0.7f) // Положение триггера выборки от коэф заполнения
 
 uint32_t filter_interrupts;
 
@@ -17,18 +19,18 @@ Control_Struct BB_Control =
 {
 		.pid_current =
 		{
-				.kp = 0,
-						.integrator =
-						{
-								.k = 100 * TSW,
-								.sat = {.min = 0, .max = 0.98},
-						},
-						.diff =
-						{
-							.k = 0,
+				.kp = 5.5816e-3,
+				.integrator =
+				{
+						.k = 16.034 * T_CALC,
+						.sat = {.min = 0, .max = 0.98},
+				},
+				.diff =
+				{
+					.k = 4.2845e-07 * F_CALC,
 
-						},
-						.sat = {.min = 0, .max = 1},
+				},
+				.sat = {.min = 0, .max = 1},
 		},
 
 };
@@ -42,30 +44,30 @@ Measure_Struct BB_Measure =
 		.shift =
 		{
 				.iL = 0,
-				.uout = 12.1324 / K_ADC,
-				.inj = -1.65f,
+				.uout = 12.1324f / K_ADC,
+				.inj = -1.54f,
 				.uin = 0,
 		},
 
 		// ------ Множитель -----
 		.scale =
 		{
-				.iL =   K_ADC * 5.0505,
-				.uout = K_ADC * 1.4749,
-				.inj =  K_ADC,
-				.uin =  K_ADC * 16.6,
+				.iL =   K_ADC * 5.0505f,
+				.uout = K_ADC * 1.4749f,
+				.inj =  K_ADC * 0.01f,
+				.uin =  K_ADC * 16.6f,
 		},
 
 		.dac[0] =
 		{
-				.shift = 0.,
-				.scale = 4095.f / 22.f,
+				.shift = 0.f,
+				.scale = 4095.f / 1.f,
 		},
 
 		.dac[1] =
 		{
-				.shift = 0.,
-				.scale = 4095.f / 14.f,
+				.shift = 0.f,
+				.scale = 4095.f / 1.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -96,7 +98,7 @@ void HRTIM1_FLT_IRQHandler(void)
 // ------------- Главное прерывание - обработчик -------------
 void DMA1_Channel2_IRQHandler(void)
 {
-
+	set_shifts();
 	// Инкрементируем переменную фильтра триггеров для расчёта
 	filter_interrupts++;
 
@@ -115,12 +117,15 @@ void DMA1_Channel2_IRQHandler(void)
 		// ----- Расчёт контура тока ---------
 		float il_ref = 5.f;
 		float error_current = il_ref - BB_Measure.data.iL;
-		BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
+		float pid_B = PID_Controller(&BB_Control.pid_current,error_current);
+		float pid_A = pid_B + BB_Measure.data.inj;
+		BB_Control.duty = pid_A;
+		//BB_Control.duty = 0.5f + BB_Measure.data.inj;
 		// -----------------------------------
 
 		// Вывод данных на ЦАП1 ЦАП2
-		DAC1->DHR12R2 =  BB_Measure.data.uout * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-		DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+		DAC1->DHR12R2 =  pid_A* BB_Measure.dac[0].scale; // DAC1 CH2  X16
+		DAC2->DHR12R1 =  pid_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 		// Применение рачётного коэффициента заполнения к модулятору
@@ -161,8 +166,8 @@ void software_protection_monitor(void)
 {
 	if (BB_Measure.data.iL > BB_Protect.iL_max)
 		{
-			BB_State = FAULT;
-			timer_PWM_off();
+			//BB_State = FAULT;
+			//timer_PWM_off();
 			GPIOC->ODR |= (1 << 10);
 		}
 //	else GPIOC->ODR &= ~(1 << 10);
@@ -197,6 +202,24 @@ void software_protection_monitor(void)
 
 }
 
+// Функция автоопределения смещения для ацп
+void set_shifts(void)
+{
+	if (BB_Measure.count == 0)
+		return;
+
+	// Обнуление текущего смещения и суммы при старте алгоритма автоопределения смещения.
+	if (BB_Measure.count == SET_SHIFTS_MAX_COUNT)
+		BB_Measure.shift.inj = BB_Measure.sum.inj = 0;
+
+	// Накапливаем сумму.
+	BB_Measure.sum.inj += BB_Measure.data.inj
+			* (1.f / SET_SHIFTS_MAX_COUNT);
+
+	// Декремент счётчика и проверка окончания автоопределения смещений.
+	if (--BB_Measure.count == 0)
+		BB_Measure.shift.inj = -BB_Measure.sum.inj;
+}
 
 
 // Функция автоопределения смещения для ацп
@@ -227,7 +250,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = 0;
 
 		// Триггер выборки на половине периода
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (0.75));
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF);
 	}
 	else if (u < U_MAX_BUCK)
 	{
@@ -241,7 +264,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = 1; // D1 в 1
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Buck) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
 	}
 	else if (u < 1)
 	{
@@ -252,7 +275,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = DUTY_MIN_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / FSW)) * (BB_Control.duty_Buck) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
 	}
 	else if (u < U_MIN_BOOST)
 	{
@@ -263,7 +286,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = 1 - DUTY_MAX_BUCK * (2 - u);
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Boost) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
 	}
 	else if (u < U_MAX_BOOST)
 	{
@@ -277,7 +300,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = u - 1.0;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Boost) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
 	}
 	else  //  (u >= U_MAX_BOOST)
 	{
@@ -291,7 +314,7 @@ float u = BB_Control.duty;
 		BB_Control.duty_Boost = DUTY_MAX_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		//HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) (144e6 * 32.f / Fsw)) * (BB_Control.duty_Boost) * 0.75);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
 	}
 
 	// E compare
