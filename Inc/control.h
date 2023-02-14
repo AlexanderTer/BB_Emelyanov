@@ -30,6 +30,9 @@ typedef struct {
 	float duty_Boost;
 	float duty_Buck;
 	float iL_ref;					// Уставка на ток рекатора
+	float uout_ref;
+	float error_current;
+	float error_voltage;
 
 	PID_Controller_Struct pid_current;// Структура регулятора тока реактора
 	PID_Controller_Struct pid_voltage;// Структура регулятора напряжения
