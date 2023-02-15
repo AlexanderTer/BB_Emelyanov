@@ -5,10 +5,6 @@
 #include "timer.h"
 #include <math.h>
 
-#define DUTY_MIN_BOOST  (0.1f)//!!
-#define F_CALC (25000.f)
-#define T_CALC  (1.f / F_CALC)
-#define TRIG_KOEF (0.7f) // Положение триггера выборки от коэф заполнения
 
 uint32_t filter_interrupts;
 
@@ -30,7 +26,7 @@ Control_Struct BB_Control =
 					.k = 4.2845e-07 * F_CALC,
 
 				},
-				.sat = {.min = 0, .max = 1},
+				.sat = {.min = 1, .max = 2},
 		},
 
 		.pid_voltage =
@@ -61,7 +57,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL = 0,
 				.uout = 12.1324f / K_ADC,
-				.inj = -1.54f,
+				.inj = 0.f,
 				.uin = 0,
 		},
 
@@ -70,20 +66,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.2f,
+				.inj =  K_ADC * 0.01f,
 				.uin =  K_ADC * 16.6f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 10.f,
+				.scale = 4095.f / 1.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 10.f,
+				.scale = 4095.f / 15.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -93,7 +89,7 @@ Measure_Struct BB_Measure =
 Protect_Struct BB_Protect =
 {
 
-		.iL_max    = 14.,
+		.iL_max    = 16.,
 		.uin_max   = 42.,
 		.uin_min   = 7.5,
 		.uout_max  = 23.,
@@ -101,64 +97,67 @@ Protect_Struct BB_Protect =
 
 };// end Protect_Struct BB_Protect -----------------------------------------
 
+/**
+ * \brief Прерывание - обработчик HRTIM
+ */
+void HRTIM1_TIME_IRQHandler(void){
+	GPIOB->ODR |= (1 << 7);
 
+	// ----- Расчёт контура напряжения ---------
+	BB_Control.uout_ref = 20.0f;
+	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
+	float il_B = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	BB_Control.iL_ref = il_B + BB_Measure.data.inj;
+
+	// ----- Расчёт контура тока ---------
+	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
+	//	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+
+	BB_Control.duty = 1.6f + BB_Measure.data.inj;
+	// -----------------------------------
+
+	// Вывод данных на ЦАП1 ЦАП2
+	DAC1->DHR12R2 =  (BB_Control.duty - 1.f)  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+
+
+	// Применение рачётного коэффициента заполнения к модулятору
+	if (BB_State != FAULT) set_Duty();
+
+	// Сброс флага прерывания
+	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
+	GPIOB->ODR &= ~(1 << 7);
+}
 
 void HRTIM1_FLT_IRQHandler(void)
 {
 	HRTIM1->sCommonRegs.ICR |= HRTIM_ICR_FLT3C;
 	//float il_ref = 5.f;
 		//	float error_current = il_ref - BB_Measure.data.iL;
+
 }
 
 
-// ------------- Главное прерывание - обработчик -------------
-void DMA1_Channel2_IRQHandler(void)
+/**
+ * \brief Прерывание - обработчик окончания передачи DMA
+ */
+void DMA1_Channel1_IRQHandler(void)
 {
+
+
+	// Установка смещения inj по нажатию кнопки
 	set_shifts();
-	// Инкрементируем переменную фильтра триггеров для расчёта
-	filter_interrupts++;
 
-	// Рассчитываем регулятор при достижении счётчика значения
-	if(filter_interrupts == 6)
-	{
-		// DEBAG НАЧАЛО РАСЧЁТА PB7
-		GPIOB->ODR |= (1 << 7);
+	// Обработка преобразований ацп
+	ADC_Data_Hanler();
 
-		// Обработка преобразований ацп
-		ADC_Data_Hanler();
-
-		// Проверка программных защит
-		software_protection_monitor();
-
-		// ----- Расчёт контура напряжения ---------
-		BB_Control.uout_ref = 20.0f;
-		BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-		float il_B = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-		BB_Control.iL_ref = il_B + BB_Measure.data.inj;
-		// ----- Расчёт контура тока ---------
-
-		BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-		BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-		//BB_Control.duty = 0.5f + BB_Measure.data.inj;
-		// -----------------------------------
-
-		// Вывод данных на ЦАП1 ЦАП2
-		DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-		DAC2->DHR12R1 = il_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
-
-
-		// Применение рачётного коэффициента заполнения к модулятору
-		if (BB_State != FAULT) set_Duty();
-
-		// Сброс переменной фильтрации триггеров расчёта
-		filter_interrupts = 0;
-
-		// DEBAG КОНЕЦ РАСЧЁТА PB7
-		GPIOB->ODR &= ~(1 << 7);
-	}
+	// Проверка программных защит
+	software_protection_monitor();
 
 	// Cбрасываем флаг прерывания
-	DMA1->IFCR = 1 << DMA_IFCR_CTCIF2_Pos;
+	DMA1->IFCR |=DMA_IFCR_CTCIF1;
+
+
 }
 
 
@@ -185,8 +184,8 @@ void software_protection_monitor(void)
 {
 	if (BB_Measure.data.iL > BB_Protect.iL_max)
 		{
-			//BB_State = FAULT;
-			//timer_PWM_off();
+			BB_State = FAULT;
+			timer_PWM_off();
 			GPIOC->ODR |= (1 << 10);
 		}
 //	else GPIOC->ODR &= ~(1 << 10);
