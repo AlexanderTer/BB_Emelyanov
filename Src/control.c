@@ -141,7 +141,7 @@ void HRTIM1_FLT_IRQHandler(void)
 /**
  * \brief Прерывание - обработчик окончания передачи DMA
  */
-void DMA1_Channel1_IRQHandler(void)
+void ADC1_2_IRQHandler(void)
 {
 
 
@@ -155,7 +155,7 @@ void DMA1_Channel1_IRQHandler(void)
 	software_protection_monitor();
 
 	// Cбрасываем флаг прерывания
-	DMA1->IFCR |=DMA_IFCR_CTCIF1;
+    ADC1->ISR |= ADC_ISR_JEOS;
 
 
 }
@@ -167,10 +167,10 @@ void DMA1_Channel1_IRQHandler(void)
 void ADC_Data_Hanler(void)
 {
 	extern volatile unsigned int ADC_Buffer[4];
-	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC_Buffer[0] + BB_Measure.shift.uout);
-	BB_Measure.data.uin = BB_Measure.scale.uin * ADC_Buffer[1] + BB_Measure.shift.uin;
-	BB_Measure.data.iL = BB_Measure.scale.iL * ADC_Buffer[2] + BB_Measure.shift.iL;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC_Buffer[3] + BB_Measure.shift.inj;
+	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+	BB_Measure.data.uin = BB_Measure.scale.uin * ADC1->JDR1 + BB_Measure.shift.uin;
+	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR + BB_Measure.shift.iL;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 
 
 	// Вычисление мощности

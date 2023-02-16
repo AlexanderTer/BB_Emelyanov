@@ -7,12 +7,12 @@
 void init_interrupt(void)
 {
 
-	// Установка приоритет прерыванийя DMA1_Channel2_IRQn: приоритет 2
-	NVIC_SetPriority(DMA1_Channel1_IRQn, 2);
+	// Установка приоритет прерыванийя ADC1_2_IRQn: приоритет 2
+	NVIC_SetPriority(ADC1_2_IRQn, 2);
 
-	// Разрешаем прерывание DMA канал 2
+	// Разрешаем прерывание AЦП канал 2
 
-	NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+    NVIC_EnableIRQ(ADC1_2_IRQn);
 
 	// Установка приоритет прерыванийя HRTIM1_TIME_IRQn: приоритет 1
 	NVIC_SetPriority(HRTIM1_TIME_IRQn, 1);
