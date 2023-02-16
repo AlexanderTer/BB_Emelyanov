@@ -103,6 +103,7 @@ Protect_Struct BB_Protect =
 void HRTIM1_TIME_IRQHandler(void){
 	GPIOB->ODR |= (1 << 7);
 
+
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
@@ -138,6 +139,7 @@ void HRTIM1_FLT_IRQHandler(void)
 }
 
 
+
 /**
  * \brief Прерывание - обработчик окончания передачи DMA
  */
@@ -155,7 +157,7 @@ void DMA1_Channel1_IRQHandler(void)
 	software_protection_monitor();
 
 	// Cбрасываем флаг прерывания
-	DMA1->IFCR |=DMA_IFCR_CTCIF1;
+	DMA1->IFCR |= DMA_IFCR_CTCIF1;
 
 
 }

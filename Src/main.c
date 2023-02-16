@@ -39,7 +39,8 @@ int main(void)
 
 	while (1)
 	{
-
+        ADC1->CR |= ADC_CR_JADSTART; // запуск АЦП
+   //     while(!(ADC1->ISR & ADC_ISR_JEOS)); // ожидание завершения преобразования
 		// Получаем температуру с датчика
 	//	TEMPERATURE = read_DS1722(0x02);
 	//	for (int i = 0; i < 10000; i++){}
@@ -50,7 +51,7 @@ int main(void)
 
 		//setDuty (0.5);
 
-		//GPIOA->ODR ^= (1 << 15);
+		GPIOA->ODR ^= (1 << 15);
 //		GPIOC->ODR ^= (1 << 10) | (1 << 11) | (1 << 12);
 
 		// Проверяем PB1 (SW1) на ноль.
@@ -63,12 +64,12 @@ int main(void)
 	}
 }
 
-//void ADC1_2_IRQHandler (void)
-//{
-//
-//	ADC1->ISR |= ADC_ISR_EOC;
-//    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
-//}
+void ADC1_2_IRQHandler (void)
+{
+
+	ADC1->ISR |= ADC_ISR_JEOS;
+    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
+}
 
 
 

@@ -141,14 +141,12 @@ void init_timer(void)
 	// Значение регистров сравнения 2 - Положение триггера выборки АЦП
 	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) PERIOD) * (0.5f));
 
-	// 101 - Timer E источник триггера выборки для ADC1
-	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC1USRC_0 | HRTIM_CR1_ADC1USRC_2;
 
-	// 101 - Timer E источник триггера выборки для ADC2
+	// 101 - Timer E источник триггера выборки для ADC Trigger2
 	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC2USRC_0 | HRTIM_CR1_ADC2USRC_2;
 
 	// Триггер ADC1: Timer E compare 2
-	HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
+	HRTIM1->sCommonRegs.ADC2R |= HRTIM_ADC2R_AD2TEC2;
 
 
 	//--- Триггер расчёта контура
