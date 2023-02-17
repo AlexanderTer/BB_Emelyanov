@@ -18,15 +18,15 @@ Control_Struct BB_Control =
 
 		.pid_current =
 		{
-				.kp = 3.6257e-03f,
+				.kp = 0.011878f,
 				.integrator =
 				{
-						.k =  5.2656f * T_CALC,
+						.k = 15.755f * T_CALC,
 						.sat = {.min = 0.8f, .max = 2.5f},
 				},
 				.diff =
 				{
-					.k =   5.7371e-07f* F_CALC,
+					.k =   2.5292e-07f* F_CALC,
 
 				},
 				.sat = {.min = 1.f, .max = 2.f},
