@@ -16,36 +16,36 @@ Control_Struct BB_Control =
 		#define F_CALC (30000.f) 		// Частота обсчёта контура
 		#define T_CALC  (1.f / F_CALC)
 
-		.pid_current =
+		.pid_current_Boost =
 		{
 				.kp = 0.011878f,
 				.integrator =
 				{
 						.k = 15.755f * T_CALC,
-						.sat = {.min = 0.8f, .max = 2.5f},
+						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
 					.k =   2.5292e-07f* F_CALC,
 
 				},
-				.sat = {.min = 1.f, .max = 2.f},
+				.sat = {.min = 0.f, .max = 2.f},
 		},
 
-		.pid_voltage =
+		.pid_voltage_Boost =
 		{
-				.kp = 1.49f,
+				.kp = 4.5902f,
 				.integrator =
 				{
-						.k =  4.2707e+04f * T_CALC,
-						.sat = {.min = 0, .max = 15.f},
+						.k =   1.2668e4f * T_CALC,
+						.sat = {.min = 0, .max = 14.5f},
 				},
 				.diff =
 				{
 					.k = 0 * F_CALC,
 
 				},
-				.sat = {.min = 0, .max = 15.f},
+				.sat = {.min = 0, .max = 14.5f},
 		},
 
 };
@@ -69,20 +69,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.01f,
+				.inj =  K_ADC * 0.5f,
 				.uin =  K_ADC * 16.3f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 2.f,
+				.scale = 4095.f / 14.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 2.f,
+				.scale = 4095.f / 14.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -110,20 +110,17 @@ void HRTIM1_TIME_IRQHandler(void){
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	float il_B = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-	//BB_Control.iL_ref = il_B + BB_Measure.data.inj;
+	float il_B = PID_Controller(&BB_Control.pid_voltage_Boost,BB_Control.error_voltage);
+	BB_Control.iL_ref = il_B + BB_Measure.data.inj;
 
 	// ----- Расчёт контура тока ---------
-	BB_Control.iL_ref  = 12.f;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-
-	float duty_B =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-	BB_Control.duty = duty_B + BB_Measure.data.inj;
+	BB_Control.duty =  PID_Controller(&BB_Control.pid_current_Boost,BB_Control.error_current);
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  duty_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  il_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 	// Применение рачётного коэффициента заполнения к модулятору
@@ -192,8 +189,8 @@ void software_protection_monitor(void)
 {
 	if (BB_Measure.data.iL > BB_Protect.iL_max)
 		{
-			BB_State = FAULT;
-			timer_PWM_off();
+			//BB_State = FAULT;
+			//timer_PWM_off();
 			GPIOC->ODR |= (1 << 10);
 		}
 //	else GPIOC->ODR &= ~(1 << 10);

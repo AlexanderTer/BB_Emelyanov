@@ -25,8 +25,8 @@ typedef struct {
 	float error_current;
 	float error_voltage;
 
-	PID_Controller_Struct pid_current;// Структура регулятора тока реактора
-	PID_Controller_Struct pid_voltage;// Структура регулятора напряжения
+	PID_Controller_Struct pid_current_Boost;// Структура регулятора тока реактора
+	PID_Controller_Struct pid_voltage_Boost;// Структура регулятора напряжения
 
 } Control_Struct; // Структура с параметрами системы кправления
 extern Control_Struct BB_Control;
