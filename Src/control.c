@@ -6,8 +6,6 @@
 #include <math.h>
 
 
-
-
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -251,7 +249,7 @@ void set_shifts(void)
 /**
  * \brief Функция программного отключения ШИМ
  */
-void timer_PWM_off(void)
+inline void timer_PWM_off(void)
 {
 	// Отключить все выходы
 	HRTIM1->sCommonRegs.ODISR = HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS | HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
