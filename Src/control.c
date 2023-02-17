@@ -6,27 +6,30 @@
 #include <math.h>
 
 
-uint32_t filter_interrupts;
+
 
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
 Control_Struct BB_Control =
 {
+		#define F_CALC (30000.f) 		// Частота обсчёта контура
+		#define T_CALC  (1.f / F_CALC)
+
 		.pid_current =
 		{
-				.kp = 5.5816e-3,
+				.kp = 0.022f,
 				.integrator =
 				{
-						.k = 16.034 * T_CALC,
-						.sat = {.min = 0, .max = 0.98},
+						.k = 10.f * T_CALC,
+						.sat = {.min = 0.8f, .max = 2.5f},
 				},
 				.diff =
 				{
-					.k = 4.2845e-07 * F_CALC,
+					.k =  1e-07f* F_CALC,
 
 				},
-				.sat = {.min = 1, .max = 2},
+				.sat = {.min = 1.f, .max = 2.f},
 		},
 
 		.pid_voltage =
@@ -67,19 +70,19 @@ Measure_Struct BB_Measure =
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
 				.inj =  K_ADC * 0.01f,
-				.uin =  K_ADC * 16.6f,
+				.uin =  K_ADC * 16.3f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 1.f,
+				.scale = 4095.f / 2.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 15.f,
+				.scale = 4095.f / 14.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -98,26 +101,28 @@ Protect_Struct BB_Protect =
 };// end Protect_Struct BB_Protect -----------------------------------------
 
 /**
- * \brief Прерывание - обработчик HRTIM
+ * \brief Прерывание - обработчик HRTIM (Событие Preload)
  */
 void HRTIM1_TIME_IRQHandler(void){
+
 	GPIOB->ODR |= (1 << 7);
 
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
 	float il_B = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-	BB_Control.iL_ref = il_B + BB_Measure.data.inj;
+	//BB_Control.iL_ref = il_B + BB_Measure.data.inj;
 
 	// ----- Расчёт контура тока ---------
-	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	//	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 
+	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
+
+	float duty_B =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 	BB_Control.duty = 1.6f + BB_Measure.data.inj;
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  (BB_Control.duty - 1.f)  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
 	DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
@@ -126,6 +131,7 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// Сброс флага прерывания
 	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
+
 	GPIOB->ODR &= ~(1 << 7);
 }
 
@@ -139,7 +145,7 @@ void HRTIM1_FLT_IRQHandler(void)
 
 
 /**
- * \brief Прерывание - обработчик окончания передачи DMA
+ * \brief Прерывание - обработчик окончания преобразования группы каналов АЦП
  */
 void ADC1_2_IRQHandler(void)
 {
@@ -166,7 +172,6 @@ void ADC1_2_IRQHandler(void)
  */
 void ADC_Data_Hanler(void)
 {
-	extern volatile unsigned int ADC_Buffer[4];
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 	BB_Measure.data.uin = BB_Measure.scale.uin * ADC1->JDR1 + BB_Measure.shift.uin;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR + BB_Measure.shift.iL;
@@ -180,6 +185,9 @@ void ADC_Data_Hanler(void)
 
 }
 
+/**
+ * \brief Функция проверки программных защит
+ */
 void software_protection_monitor(void)
 {
 	if (BB_Measure.data.iL > BB_Protect.iL_max)
@@ -220,7 +228,10 @@ void software_protection_monitor(void)
 
 }
 
-// Функция автоопределения смещения для ацп
+
+/**
+ * \brief Функция автоопределения смещения сигнала инжекции
+ */
 void set_shifts(void)
 {
 	if (BB_Measure.count == 0)
@@ -240,10 +251,9 @@ void set_shifts(void)
 }
 
 
-// Функция автоопределения смещения для ацп
-
-
-
+/**
+ * \brief Функция программного отключения ШИМ
+ */
 void timer_PWM_off(void)
 {
 	// Отключить все выходы
@@ -254,18 +264,29 @@ void timer_PWM_off(void)
 /**
  * \brief Функция применения рассчитанного коэффициента заполнения к таймеру HRTIM
  */
-inline void set_Duty(void)
+void set_Duty(void)
 {
 
-float u = BB_Control.duty;
+	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
+	#define DUTY_MIN_BUCK (0.05)
+	#define DUTY_MAX_BUCK (0.9)
+	#define DUTY_MIN_BOOST  (0.1)
+	#define DUTY_MAX_BOOST (0.95)
+
+	#define U_MIN_BUCK DUTY_MIN_BUCK
+	#define U_MAX_BUCK DUTY_MAX_BUCK
+	#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
+	#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
+
+	float u = BB_Control.duty;
 
 	if (u < U_MIN_BUCK)
 	{
 		// Отключить все выходы
 		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS | HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
 
-		BB_Control.duty_Buck = 0;
-		BB_Control.duty_Boost = 0;
+		BB_Control.duty_Buck = 0.f;
+		BB_Control.duty_Boost = 0.f;
 
 		// Триггер выборки на половине периода
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF);
@@ -279,7 +300,7 @@ float u = BB_Control.duty;
 		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TD2ODIS;
 
 		BB_Control.duty_Buck = u;
-		BB_Control.duty_Boost = 1; // D1 в 1
+		BB_Control.duty_Boost = 1.f; // D1 в 1
 
 		// Триггер выборки в половине коэффициента заполнения Buck
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
@@ -301,7 +322,7 @@ float u = BB_Control.duty;
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
 		BB_Control.duty_Buck = DUTY_MAX_BUCK;
-		BB_Control.duty_Boost = 1 - DUTY_MAX_BUCK * (2 - u);
+		BB_Control.duty_Boost = 1.f - DUTY_MAX_BUCK * (2.f - u);
 
 		// Триггер выборки в половине коэффициента заполнения Boost
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
@@ -314,8 +335,8 @@ float u = BB_Control.duty;
 		// Отключить E1
 		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS;
 
-		BB_Control.duty_Buck = 0; // Для открытия E2
-		BB_Control.duty_Boost = u - 1.0;
+		BB_Control.duty_Buck = 0.f; // Для открытия E2
+		BB_Control.duty_Boost = u - 1.0f;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
@@ -328,7 +349,7 @@ float u = BB_Control.duty;
 		// Отключить E1
 		HRTIM1->sCommonRegs.ODISR |= HRTIM_ODISR_TE1ODIS;
 
-		BB_Control.duty_Buck = 0; // Для открытия E2
+		BB_Control.duty_Buck = 0.f; // Для открытия E2
 		BB_Control.duty_Boost = DUTY_MAX_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Boost

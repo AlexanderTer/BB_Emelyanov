@@ -9,25 +9,13 @@
 #define F_HIRES (144e6f * 32.f) // Эквивалентная частота таймера высокого разрешения, Гц
 #define PERIOD (F_HIRES / FSW)  // Период для записи в регистр периода
 
-#define F_CALC (20000.f) 		// Частота обсчёта контура
-#define T_CALC  (1.f / F_CALC)
-#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (например 0.5 - середина открытого состояния ключа)
 
 
-#define DUTY_MIN_BUCK (0.05)
-#define DUTY_MAX_BUCK (0.9)
-#define DUTY_MIN_BOOST  (0.1)
-#define DUTY_MAX_BOOST (0.95)
 
-#define U_MIN_BUCK DUTY_MIN_BUCK
-#define U_MAX_BUCK DUTY_MAX_BUCK
-#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
 
 // ---------------- Структура процесса регулирования ----------------
 typedef struct {
-
 
 	float duty; 					// Коэффициент заполнения, [0..2]
 	float duty_Boost;
@@ -103,4 +91,5 @@ void ADC_Data_Hanler (void);
 void software_protection_monitor(void);
 void timer_PWM_off(void);
 void set_Duty(void);
+void set_shifts(void);
 #endif

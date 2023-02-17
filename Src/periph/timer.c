@@ -2,8 +2,7 @@
 #include "timer.h"
 #include "control.h"
 
-#define DEADTIME (35e-9f) 		// Величина Deadtime, сек ( ! 222ns MAX ! )
-#define DEADTIME_RES (868e-12f) // Разрешение Deadtime, сек
+
 
 
 
@@ -12,6 +11,9 @@
  */
 void init_timer(void)
 {
+	#define DEADTIME (35e-9f) 		// Величина Deadtime, сек ( ! 222ns MAX ! )
+	#define DEADTIME_RES (868e-12f) // Разрешение Deadtime, сек
+
 
 	// Тактирование таймера 2*PLL = 144 MHz
 	RCC->CFGR3 |= RCC_CFGR3_HRTIM1SW_PLL;
@@ -158,7 +160,6 @@ void init_timer(void)
 
 	// Включить прерывание по событию repetition
 	HRTIM1->sTimerxRegs[4].TIMxDIER |= HRTIM_TIMDIER_REPIE;
-
 
 
 	// Включение счёта

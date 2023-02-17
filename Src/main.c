@@ -18,15 +18,17 @@ uint32_t TEMPERATURE;
 
 int main(void)
 {
+	BB_Control.iL_ref  = 11.f;
 	init_RCC();
 	init_GPIO();
 	init_spi();
 	//init_comp();
 	init_timer();
-	init_dma();
+
 	init_adc();
 	init_dac();
 	init_interrupt();
+
 
 
 
