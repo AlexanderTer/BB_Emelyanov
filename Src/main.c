@@ -14,8 +14,6 @@
 
 uint32_t TEMPERATURE;
 
-
-
 int main(void)
 {
 
@@ -29,9 +27,6 @@ int main(void)
 	init_dac();
 	init_interrupt();
 
-
-
-
 	//  Записываем конфигурацию датчика
 	// -Режим непрерывного измерения
 	// -Точность 8 бит
@@ -41,28 +36,52 @@ int main(void)
 
 	while (1)
 	{
+		if (BB_State != FAULT)
+		{
 
-		// Получаем температуру с датчика
-	//	TEMPERATURE = read_DS1722(0x02);
-	//	for (int i = 0; i < 10000; i++){}
+			if (BB_Control.duty < U_MAX_BUCK)
+			{
+				BB_State = BUCK;
+				BB_Control.pid_current.kp = BB_Control.pid_current.kp_buck;
+				BB_Control.pid_current.integrator.k =
+						BB_Control.pid_current.integrator.k_buck;
+				BB_Control.pid_current.diff.k =
+						BB_Control.pid_current.diff.k_buck;
 
-		//DAC2->SWTRIGR |= DAC_SWTRIGR_SWTRIG1;
-	//	if (TEMPERATURE < 30) GPIOB->ODR &= ~(1 << 7);
-	//	else GPIOB->ODR |= (1 << 7);
+				BB_Control.pid_voltage.kp = BB_Control.pid_voltage.kp_buck;
+				BB_Control.pid_voltage.integrator.k =
+						BB_Control.pid_voltage.integrator.k_buck;
+				BB_Control.pid_voltage.diff.k =
+						BB_Control.pid_voltage.diff.k_buck;
 
-		//setDuty (0.5);
+			}
+			else if (BB_Control.duty > U_MIN_BOOST)
+			{
+				BB_State = BOOST;
+				BB_Control.pid_current.kp = BB_Control.pid_current.kp_boost;
+				BB_Control.pid_current.integrator.k =
+						BB_Control.pid_current.integrator.k_boost;
+				BB_Control.pid_current.diff.k =
+						BB_Control.pid_current.diff.k_boost;
 
-		//GPIOA->ODR ^= (1 << 15);
-//		GPIOC->ODR ^= (1 << 10) | (1 << 11) | (1 << 12);
+				BB_Control.pid_voltage.kp = BB_Control.pid_voltage.kp_boost;
+				BB_Control.pid_voltage.integrator.k =
+						BB_Control.pid_voltage.integrator.k_boost;
+				BB_Control.pid_voltage.diff.k =
+						BB_Control.pid_voltage.diff.k_boost;
+			}
+			else
+				BB_State = BUCK_BOOST;
+		}
 
 		// Проверяем PB1 (SW1) на ноль.
 		if (!(GPIOD->IDR & (1 << 2)))
-			{
-				BB_Measure.count = SET_SHIFTS_MAX_COUNT;
-			}
-
+		{
+			BB_Measure.count = SET_SHIFTS_MAX_COUNT;
+		}
 
 	}
+
 }
 
 //void ADC1_2_IRQHandler (void)
@@ -71,7 +90,4 @@ int main(void)
 //	ADC1->ISR |= ADC_ISR_EOC;
 //    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
 //}
-
-
-
 

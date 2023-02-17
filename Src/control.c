@@ -6,6 +6,7 @@
 #include <math.h>
 
 
+
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -16,15 +17,22 @@ Control_Struct BB_Control =
 
 		.pid_current =
 		{
+				.kp_boost = 0.011878f,
+				.kp_buck = 0.0f,
 				.kp = 0.011878f,
+
 				.integrator =
 				{
+						.k_boost = 15.755f * T_CALC,
+						.k_buck = 10.f * T_CALC,
 						.k = 15.755f * T_CALC,
 						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
-					.k =   2.5292e-07f* F_CALC,
+					.k_boost = 2.5292e-07 * F_CALC,
+					.k_buck = 0.f * F_CALC,
+					.k =   2.5292e-07f * F_CALC,
 
 				},
 				.sat = {.min = 0.f, .max = 2.f},
@@ -32,15 +40,23 @@ Control_Struct BB_Control =
 
 		.pid_voltage =
 		{
+				.kp_boost = 4.5902f,
+				.kp_buck = 0.0f,
 				.kp = 4.5902f,
+
 				.integrator =
 				{
+						.k_boost = 1.2668e4f * T_CALC,
+						.k_buck = 10.f * T_CALC,
 						.k =   1.2668e4f * T_CALC,
 						.sat = {.min = 0, .max = 14.5f},
 				},
+
 				.diff =
 				{
-					.k = 0 * F_CALC,
+					.k_boost = 0.f * F_CALC,
+					.k_buck = 0.f * F_CALC,
+					.k = 0.f * F_CALC,
 
 				},
 				.sat = {.min = 0, .max = 14.5f},
@@ -105,6 +121,9 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	GPIOB->ODR |= (1 << 7);
 
+	// Выбор коэффициентов
+
+
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
@@ -121,8 +140,12 @@ void HRTIM1_TIME_IRQHandler(void){
 	//DAC2->DHR12R1 =  BB_Control.iL_ref * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
+
 	// Применение рачётного коэффициента заполнения к модулятору
-	if (BB_State != FAULT) set_Duty();
+	if (BB_State != FAULT)
+		{
+			set_Duty();
+		}
 
 	// Сброс флага прерывания
 	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
@@ -263,15 +286,7 @@ void set_Duty(void)
 {
 
 	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
-	#define DUTY_MIN_BUCK (0.05)
-	#define DUTY_MAX_BUCK (0.9)
-	#define DUTY_MIN_BOOST  (0.1)
-	#define DUTY_MAX_BOOST (0.95)
 
-	#define U_MIN_BUCK DUTY_MIN_BUCK
-	#define U_MAX_BUCK DUTY_MAX_BUCK
-	#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-	#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
 	float u = BB_Control.duty;
 

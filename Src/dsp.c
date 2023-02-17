@@ -14,6 +14,7 @@
  */
 float Trapezoidal_Integrator(Integrator_Struct *integrator, float x) {
 
+
 	// y[n] = s[n-1] + x[n]*k
 	float out = LIMIT(integrator->sum + integrator->k * x, integrator->sat.min,
 			integrator->sat.max);
