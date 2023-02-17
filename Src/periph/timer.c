@@ -5,15 +5,15 @@
 
 
 
-#define DEADTIME (35e-9f) 		// Величина Deadtime, сек ( ! 222ns MAX ! )
-#define DEADTIME_RES (868e-12f) // Разрешение Deadtime, сек
-
 
 /**
  * \brief Инициализация таймера высокого разрешения
  */
 void init_timer(void)
 {
+	#define DEADTIME (35e-9f) 		// Величина Deadtime, сек ( ! 222ns MAX ! )
+	#define DEADTIME_RES (868e-12f) // Разрешение Deadtime, сек
+
 
 	// Тактирование таймера 2*PLL = 144 MHz
 	RCC->CFGR3 |= RCC_CFGR3_HRTIM1SW_PLL;
@@ -31,6 +31,9 @@ void init_timer(void)
 
 	// Период таймера
 	HRTIM1->sMasterRegs.MPER = (uint32_t) ((float) PERIOD);
+
+	// Непрерывный режим работы
+	HRTIM1->sMasterRegs.MCR |= HRTIM_MCR_CONT;
 
 	// --- Fault ------------------------------------------------
 
@@ -95,6 +98,8 @@ void init_timer(void)
 	// Непрерывный режим работы
 	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_CONT;
 
+	// Буферизация
+	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_PREEN;
 
 
 	// -- Timer E - Buck timer -------------------------------------------------------
@@ -129,10 +134,14 @@ void init_timer(void)
 	// Непрерывный режим работы
 	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_CONT;
 
+	// Буферизация
+	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;
 
-	//--- Триггеры выборки
+
+
+	//--- Триггер выборки
 	// Значение регистров сравнения 2 - Положение триггера выборки АЦП
-	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) PERIOD) * (0.75));
+	HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (((float) PERIOD) * (0.5f));
 
 	// 101 - Timer E источник триггера выборки для ADC1
 	HRTIM1->sCommonRegs.CR1 |= HRTIM_CR1_ADC1USRC_0 | HRTIM_CR1_ADC1USRC_2;
@@ -143,12 +152,15 @@ void init_timer(void)
 	// Триггер ADC1: Timer E compare 2
 	HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
-	// Триггер ADC2: Timer E compare 2
-	//HRTIM1->sCommonRegs.ADC1R |= HRTIM_ADC1R_AD1TEC2;
 
-	// Буферизация
-	HRTIM1->sTimerxRegs[4].TIMxCR |= HRTIM_TIMCR_PREEN;
-	HRTIM1->sTimerxRegs[3].TIMxCR |= HRTIM_TIMCR_PREEN;
+	//--- Триггер расчёта контура
+
+	// Запись делителя прерываний
+	HRTIM1->sTimerxRegs[4].REPxR = 9; // [Fsw 300 кГц / Fcalc 20 кГц] - 1 = 14 тактов
+
+	// Включить прерывание по событию repetition
+	HRTIM1->sTimerxRegs[4].TIMxDIER |= HRTIM_TIMDIER_REPIE;
+
 
 	// Включение счёта
 	HRTIM1->sMasterRegs.MCR |= HRTIM_MCR_MCEN | HRTIM_MCR_TECEN | HRTIM_MCR_TDCEN;

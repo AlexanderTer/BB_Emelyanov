@@ -11,25 +11,19 @@
 
 
 
-#define DUTY_MIN_BUCK (0.05)
-#define DUTY_MAX_BUCK (0.9)
-#define DUTY_MIN_BOOST  (0.1)
-#define DUTY_MAX_BOOST (0.95)
 
-#define U_MIN_BUCK DUTY_MIN_BUCK
-#define U_MAX_BUCK DUTY_MAX_BUCK
-#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
 
 // ---------------- Структура процесса регулирования ----------------
 typedef struct {
 
-
 	float duty; 					// Коэффициент заполнения, [0..2]
 	float duty_Boost;
 	float duty_Buck;
 	float iL_ref;					// Уставка на ток рекатора
+	float uout_ref;
+	float error_current;
+	float error_voltage;
 
 	PID_Controller_Struct pid_current;// Структура регулятора тока реактора
 	PID_Controller_Struct pid_voltage;// Структура регулятора напряжения
@@ -97,4 +91,5 @@ void ADC_Data_Hanler (void);
 void software_protection_monitor(void);
 void timer_PWM_off(void);
 void set_Duty(void);
+void set_shifts(void);
 #endif

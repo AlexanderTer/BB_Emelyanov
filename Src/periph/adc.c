@@ -39,32 +39,31 @@ void init_adc(void)
 	ADC1->CFGR |= ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2;
 	ADC2->CFGR |= ADC_CFGR_EXTSEL_0 | ADC_CFGR_EXTSEL_1 | ADC_CFGR_EXTSEL_2;
 
+	// Автоматический режим инжектированной группы - преобразование начнётся после всех регулярных каналов
+    ADC1->CFGR |= ADC_CFGR_JAUTO;
+    ADC2->CFGR |= ADC_CFGR_JAUTO;
 
-	// Выбор канала первого преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ1_2;                                   // CH IN4 (100) - Vout
-	ADC2->SQR1 |= ADC_SQR1_SQ1_0 | ADC_SQR1_SQ1_2 | ADC_SQR1_SQ1_3; // CH IN13 (1101) - Il
+	// Выбор канала первого преобразования регулярной группы
+	ADC1->SQR1 |= 4 << ADC_SQR1_SQ1_Pos;                                    // CH IN4 (100) - Vout
+	ADC2->SQR1 |= 13 << ADC_SQR1_SQ1_Pos;  // CH IN13 (1101) - Il
 
-	// Выбор канала второго преобразования
-	ADC1->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_2 | ADC_SQR1_SQ2_3; // CH IN13 (1101) - Vin
-	ADC2->SQR1 |= ADC_SQR1_SQ2_0 | ADC_SQR1_SQ2_2; 					// CH IN5 (101) - Inj
-
+	// Выбор канала первго преобразования инжектированной группы (преобразование после регулярной группы)
+    ADC1->JSQR |= 13 << ADC_JSQR_JSQ1_Pos;                                   // CH IN13 - Vin
+    ADC2->JSQR |= 5 << ADC_JSQR_JSQ1_Pos;                                   // CH IN5 - Inj
 
 
 	// Количество преобразований после получения триггера выборки
-	ADC1->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
-	ADC2->SQR1 |= ADC_SQR1_L_0; // 2 Преобразования
+	//ADC1->SQR1 = 0; 			// 1 Преобразование регулярного канала
+    //ADC1->JSQR = 0; 			// 1 Преобразование инжектированного канала
+    //ADC2->SQR1 = 0; 			// 1 Преобразование регулярного канала
+    //ADC2->JSQR = 0;			    // 1 Преобразование инжектированного канала
 
-	// Устанавливаем длительность выборки в тактах АЦП:
-	ADC1->SMPR1 |= (0x4 << ADC_SMPR1_SMP1_Pos) | (0x4 << ADC_SMPR1_SMP2_Pos); // 1е 2е преобразование 19.5 CLK
-	ADC2->SMPR1 |= (0x4 << ADC_SMPR1_SMP1_Pos) | (0x4 << ADC_SMPR1_SMP2_Pos); // 1е 2е преобразование 19.5 CLK
+	// Устанавливаем длительность выборки в тактах АЦП:S
+	ADC1->SMPR1 |= (4 << ADC_SMPR1_SMP1_Pos)|(4 << ADC_SMPR1_SMP2_Pos); //  19.5 CLK
+	ADC2->SMPR1 |= (4 << ADC_SMPR1_SMP1_Pos)|(4 << ADC_SMPR1_SMP2_Pos); //  19.5 CLK
 
-	// Выбор кругового режима ДМА
-	ADC1->CFGR |= ADC_CFGR_DMACFG;
-	ADC2->CFGR |= ADC_CFGR_DMACFG;
-
-	// Включение прямого доступа к памяти
-	ADC1->CFGR |= ADC_CFGR_DMAEN;
-	ADC2->CFGR |= ADC_CFGR_DMAEN;
+    // Включение прерывания после окончания группы преобразований
+    ADC1->IER |= ADC_IER_JEOSIE;
 
 	// Включение внутреннего ИОН
 	ADC12_COMMON->CCR |= ADC_CCR_VREFEN;
