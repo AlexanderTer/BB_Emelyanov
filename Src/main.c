@@ -43,32 +43,25 @@ int main(void)
 			{
 				BB_State = BUCK;
 				BB_Control.pid_current.kp = BB_Control.pid_current.kp_buck;
-				BB_Control.pid_current.integrator.k =
-						BB_Control.pid_current.integrator.k_buck;
+				BB_Control.pid_current.integrator.k = BB_Control.pid_current.integrator.k_buck;
 				BB_Control.pid_current.diff.k =
-						BB_Control.pid_current.diff.k_buck;
+				BB_Control.pid_current.diff.k_buck;
 
 				BB_Control.pid_voltage.kp = BB_Control.pid_voltage.kp_buck;
-				BB_Control.pid_voltage.integrator.k =
-						BB_Control.pid_voltage.integrator.k_buck;
-				BB_Control.pid_voltage.diff.k =
-						BB_Control.pid_voltage.diff.k_buck;
+				BB_Control.pid_voltage.integrator.k = BB_Control.pid_voltage.integrator.k_buck;
+				BB_Control.pid_voltage.diff.k = BB_Control.pid_voltage.diff.k_buck;
 
 			}
 			else if (BB_Control.duty > U_MIN_BOOST)
 			{
 				BB_State = BOOST;
 				BB_Control.pid_current.kp = BB_Control.pid_current.kp_boost;
-				BB_Control.pid_current.integrator.k =
-						BB_Control.pid_current.integrator.k_boost;
-				BB_Control.pid_current.diff.k =
-						BB_Control.pid_current.diff.k_boost;
+				BB_Control.pid_current.integrator.k = BB_Control.pid_current.integrator.k_boost;
+				BB_Control.pid_current.diff.k = BB_Control.pid_current.diff.k_boost;
 
 				BB_Control.pid_voltage.kp = BB_Control.pid_voltage.kp_boost;
-				BB_Control.pid_voltage.integrator.k =
-						BB_Control.pid_voltage.integrator.k_boost;
-				BB_Control.pid_voltage.diff.k =
-						BB_Control.pid_voltage.diff.k_boost;
+				BB_Control.pid_voltage.integrator.k = BB_Control.pid_voltage.integrator.k_boost;
+				BB_Control.pid_voltage.diff.k = BB_Control.pid_voltage.diff.k_boost;
 			}
 			else
 				BB_State = BUCK_BOOST;
