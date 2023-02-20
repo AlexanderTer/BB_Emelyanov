@@ -123,14 +123,16 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// Выбор коэффициентов
 
-
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
-	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
+	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
+	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
 	BB_Control.duty =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 	BB_Control.duty = 0.5f + BB_Measure.data.inj;
