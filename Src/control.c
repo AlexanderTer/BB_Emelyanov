@@ -18,20 +18,20 @@ Control_Struct BB_Control =
 		.pid_current =
 		{
 				.kp_boost = 0.011878f,
-				.kp_buck = 4.1569e-03f,
+				.kp_buck = 4.9801e-03f,
 				.kp = 0.011878f,
 
 				.integrator =
 				{
 						.k_boost = 15.755f * T_CALC,
-						.k_buck = 8.8714f * T_CALC,
+						.k_buck = 11.579f * T_CALC,
 						.k = 15.755f * T_CALC,
 						.sat = {.min = 0.f, .max = 1.f},
 				},
 				.diff =
 				{
 					.k_boost = 2.5292e-07 * F_CALC,
-					.k_buck = 3.6081e-07f * F_CALC,
+					.k_buck = 4.1593e-07f * F_CALC,
 					.k =   2.5292e-07f * F_CALC,
 
 				},
@@ -83,7 +83,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.01f,
+				.inj =  K_ADC * 0.05f,
 				.uin =  K_ADC * 14.5f,
 		},
 
@@ -96,7 +96,7 @@ Measure_Struct BB_Measure =
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 7.f,
+				.scale = 4095.f / 1.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -125,22 +125,24 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
-	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
 	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
-	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
+	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR + BB_Measure.shift.iL;
 	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
-
+	BB_Control.iL_ref = 5.0f;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	BB_Control.duty =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-	BB_Control.duty = 0.5f + BB_Measure.data.inj;
+	float duty_B = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+	BB_Control.duty =  duty_B + BB_Measure.data.inj;
+
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
 	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC2->DHR12R1 =  duty_B * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -229,8 +231,8 @@ void software_protection_monitor(void)
 
 	if (BB_Measure.data.uin > BB_Protect.uin_max)
 	{
-		BB_State = FAULT;
-		timer_PWM_off();
+		//BB_State = FAULT;
+		//timer_PWM_off();
 		GPIOC->ODR |= (1 << 12);
 	}
 	//else GPIOC->ODR &= ~(1 << 12);
