@@ -83,20 +83,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.01f,
+				.inj =  K_ADC * 0.1f,
 				.uin =  K_ADC * 14.5f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 1.f,
+				.scale = 4095.f / 7.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 1.f,
+				.scale = 4095.f / 22.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -125,24 +125,22 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
 	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
+	BB_Control.iL_ref = 5.f + 	BB_Measure.data.inj;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
-
-	BB_Control.iL_ref = 5.0f;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	float duty_b = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-	BB_Control.duty = duty_b + BB_Measure.data.inj;
+	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  duty_b * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  BB_Measure.data.uout *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
