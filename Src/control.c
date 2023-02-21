@@ -18,24 +18,24 @@ Control_Struct BB_Control =
 		.pid_current =
 		{
 				.kp_boost = 0.011878f,
-				.kp_buck = 4.1569e-03f,
+				.kp_buck = 3.5817e-03f,
 				.kp = 0.011878f,
 
 				.integrator =
 				{
 						.k_boost = 15.755f * T_CALC,
-						.k_buck = 8.8714f * T_CALC,
+						.k_buck =  6.5929f * T_CALC,
 						.k = 15.755f * T_CALC,
 						.sat = {.min = 0.f, .max = 1.f},
 				},
 				.diff =
 				{
 					.k_boost = 2.5292e-07 * F_CALC,
-					.k_buck = 3.6081e-07f * F_CALC,
+					.k_buck = 4.4221e-07f * F_CALC,
 					.k =   2.5292e-07f * F_CALC,
 
 				},
-				.sat = {.min = 0.f, .max = 1.f},
+				.sat = {.min = 0.f, .max = 0.9f},
 		},
 
 		.pid_voltage =
@@ -96,7 +96,7 @@ Measure_Struct BB_Measure =
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 7.f,
+				.scale = 4095.f / 1.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -125,7 +125,8 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
-	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
 	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
@@ -133,14 +134,15 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
 	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 
+	BB_Control.iL_ref = 5.0f;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	BB_Control.duty =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-	BB_Control.duty = 0.5f + BB_Measure.data.inj;
+	float duty_b = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+	BB_Control.duty = duty_b + BB_Measure.data.inj;
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
 	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Measure.data.iL * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC2->DHR12R1 =  duty_b * BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -287,9 +289,7 @@ inline void timer_PWM_off(void)
  */
 void set_Duty(void)
 {
-
 	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
-
 
 	float u = BB_Control.duty;
 
