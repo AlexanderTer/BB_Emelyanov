@@ -40,13 +40,13 @@ Control_Struct BB_Control =
 
 		.pid_voltage =
 		{
-				.kp_boost = 15.033f,
+				.kp_boost = 10.945f,
 				.kp_buck = 0.2724f,
 				.kp = 4.5902f,
 
 				.integrator =
 				{
-						.k_boost = 6.2882e+04f * T_CALC,
+						.k_boost = 3.5877e+04f * T_CALC,
 						.k_buck =  2.9269e+04f * T_CALC,
 						.k =   1.2668e4f * T_CALC,
 						.sat = {.min = 0, .max = 14.5f},
@@ -59,7 +59,7 @@ Control_Struct BB_Control =
 					.k = 0.f * F_CALC,
 
 				},
-				.sat = {.min = 0, .max = 5.5f},
+				.sat = {.min = 0, .max = 14.5f},
 		},
 
 };
@@ -83,7 +83,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.1f,
+				.inj =  K_ADC * 0.01f,
 				.uin =  K_ADC * 14.5f,
 		},
 
@@ -96,7 +96,7 @@ Measure_Struct BB_Measure =
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 22.f,
+				.scale = 4095.f / 14.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -106,7 +106,7 @@ Measure_Struct BB_Measure =
 Protect_Struct BB_Protect =
 {
 
-		.iL_max    = 16.,
+		.iL_max    = 18.,//16
 		.uin_max   = 42.,
 		.uin_min   = 7.5,
 		.uout_max  = 23.,
@@ -127,20 +127,21 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Control.uout_ref = 20.0f;
 	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	float uref_b = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	BB_Control.iL_ref = uref_b + BB_Measure.data.inj;
 
 
 	// ----- Расчёт контура тока ---------
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
-	BB_Control.iL_ref = 12.5f + BB_Measure.data.inj;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
 	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
 	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Measure.data.uout *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC2->DHR12R1 =  uref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
