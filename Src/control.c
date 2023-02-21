@@ -35,7 +35,7 @@ Control_Struct BB_Control =
 					.k =   2.5292e-07f * F_CALC,
 
 				},
-				.sat = {.min = 0.f, .max = 0.9f},
+				.sat = {.min = 1.f, .max = 2.f},
 		},
 
 		.pid_voltage =
@@ -83,20 +83,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.1f,
+				.inj =  K_ADC * 0.01f,
 				.uin =  K_ADC * 14.5f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 1.f,
+				.scale = 4095.f / 2.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 1.f,
+				.scale = 4095.f / 14.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -125,22 +125,22 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	float iref_b = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-	BB_Control.iL_ref = iref_b + BB_Measure.data.inj;
+	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
 	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+	BB_Control.duty = 1.6f + BB_Measure.data.inj;
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  iref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  BB_Measure.data.iL *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
