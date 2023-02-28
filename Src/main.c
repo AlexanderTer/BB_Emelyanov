@@ -36,6 +36,9 @@ int main(void)
 
 	while (1)
 	{
+		/**
+		 * Переключатель коэффициентов Buck <-> Boost
+		 */
 		if (BB_State != FAULT)
 		{
 
@@ -76,11 +79,4 @@ int main(void)
 	}
 
 }
-
-//void ADC1_2_IRQHandler (void)
-//{
-//
-//	ADC1->ISR |= ADC_ISR_EOC;
-//    // res= (float)ADC2->DR * 3.3 / 4096. ; // пересчет в напряжение
-//}
 
