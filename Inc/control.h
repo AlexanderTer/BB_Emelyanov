@@ -9,15 +9,15 @@
 #define F_HIRES (144e6f * 32.f) // Эквивалентная частота таймера высокого разрешения, Гц
 #define PERIOD (F_HIRES / FSW)  // Период для записи в регистр периода
 
-#define DUTY_MIN_BUCK (0.05)
-#define DUTY_MAX_BUCK (0.9)
-#define DUTY_MIN_BOOST  (0.1)
-#define DUTY_MAX_BOOST (0.95)
+#define DUTY_MIN_BUCK (0.05f)
+#define DUTY_MAX_BUCK (0.9f)
+#define DUTY_MIN_BOOST  (0.1f)
+#define DUTY_MAX_BOOST (0.95f)
 
 #define U_MIN_BUCK DUTY_MIN_BUCK
 #define U_MAX_BUCK DUTY_MAX_BUCK
-#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
+#define U_MIN_BOOST 1.f + DUTY_MIN_BOOST
+#define U_MAX_BOOST 1.f + DUTY_MAX_BOOST
 
 
 
