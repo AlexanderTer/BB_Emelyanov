@@ -7,7 +7,6 @@
 
 
 
-
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -18,15 +17,22 @@ Control_Struct BB_Control =
 
 		.pid_current =
 		{
-				.kp = 0.011878f,
+				.kp_boost = 4.2901e-03f,
+				.kp_buck =  3.5817e-03f,
+				.kp =  4.2901e-03f,
+
 				.integrator =
 				{
-						.k = 15.755f * T_CALC,
+						.k_boost = 6.1893f * T_CALC,
+						.k_buck =  6.5929f * T_CALC,
+						.k = 6.1893f * T_CALC,
 						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
-					.k =   2.5292e-07f* F_CALC,
+					.k_boost = 6.8692e-07 * F_CALC,
+					.k_buck = 4.4221e-07f * F_CALC,
+					.k =   6.8692e-07f * F_CALC,
 
 				},
 				.sat = {.min = 0.f, .max = 2.f},
@@ -34,15 +40,23 @@ Control_Struct BB_Control =
 
 		.pid_voltage =
 		{
-				.kp = 4.5902f,
+				.kp_boost = 8.0126f,
+				.kp_buck = 0.2724f,
+				.kp = 7.2080f,
+
 				.integrator =
 				{
-						.k =   1.2668e4f * T_CALC,
+						.k_boost = 3.7819e+04f * T_CALC,
+						.k_buck =  2.9269e+04f * T_CALC,
+						.k =   2.6952e+04f * T_CALC,
 						.sat = {.min = 0, .max = 14.5f},
 				},
+
 				.diff =
 				{
-					.k = 0 * F_CALC,
+					.k_boost = 0.f * F_CALC,
+					.k_buck = 0.f * F_CALC,
+					.k = 0.f * F_CALC,
 
 				},
 				.sat = {.min = 0, .max = 14.5f},
@@ -69,20 +83,20 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.5f,
-				.uin =  K_ADC * 16.3f,
+				.inj =  K_ADC * 0.1f,
+				.uin =  K_ADC * 14.5f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 14.f,
+				.scale = 4095.f / 16.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 14.f,
+				.scale = 4095.f / 16.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -92,7 +106,7 @@ Measure_Struct BB_Measure =
 Protect_Struct BB_Protect =
 {
 
-		.iL_max    = 16.,
+		.iL_max    = 18.,
 		.uin_max   = 42.,
 		.uin_min   = 7.5,
 		.uout_max  = 23.,
@@ -102,29 +116,41 @@ Protect_Struct BB_Protect =
 
 /**
  * \brief Прерывание - обработчик HRTIM (Событие Preload)
+ * \details Главное прерывание-обработчик коонтура ОС
  */
 void HRTIM1_TIME_IRQHandler(void){
 
 	GPIOB->ODR |= (1 << 7);
 
+	// Выбор коэффициентов
+
 	// ----- Расчёт контура напряжения ---------
 	BB_Control.uout_ref = 20.0f;
+	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	float iLref_b = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	BB_Control.iL_ref = iLref_b +  BB_Measure.data.inj;
 
 
 	// ----- Расчёт контура тока ---------
+	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	BB_Control.duty =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	//DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	//DAC2->DHR12R1 =  BB_Control.iL_ref * BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  iLref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+
 
 
 	// Применение рачётного коэффициента заполнения к модулятору
-	if (BB_State != FAULT) set_Duty();
+	if (BB_State != FAULT)
+		{
+			set_Duty();
+		}
 
 	// Сброс флага прерывания
 	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
@@ -132,6 +158,9 @@ void HRTIM1_TIME_IRQHandler(void){
 	GPIOB->ODR &= ~(1 << 7);
 }
 
+/**
+ * \brief Прерывание - обработчик аппаратныго сигнала ошибки
+ */
 void HRTIM1_FLT_IRQHandler(void)
 {
 	HRTIM1->sCommonRegs.ICR |= HRTIM_ICR_FLT3C;
@@ -251,7 +280,7 @@ void set_shifts(void)
 /**
  * \brief Функция программного отключения ШИМ
  */
-void timer_PWM_off(void)
+inline void timer_PWM_off(void)
 {
 	// Отключить все выходы
 	HRTIM1->sCommonRegs.ODISR = HRTIM_ODISR_TE1ODIS | HRTIM_ODISR_TE2ODIS | HRTIM_ODISR_TD1ODIS | HRTIM_ODISR_TD2ODIS;
@@ -263,17 +292,7 @@ void timer_PWM_off(void)
  */
 void set_Duty(void)
 {
-
 	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
-	#define DUTY_MIN_BUCK (0.05)
-	#define DUTY_MAX_BUCK (0.9)
-	#define DUTY_MIN_BOOST  (0.1)
-	#define DUTY_MAX_BOOST (0.95)
-
-	#define U_MIN_BUCK DUTY_MIN_BUCK
-	#define U_MAX_BUCK DUTY_MAX_BUCK
-	#define U_MIN_BOOST 1 + DUTY_MIN_BOOST
-	#define U_MAX_BOOST 1 + DUTY_MAX_BOOST
 
 	float u = BB_Control.duty;
 

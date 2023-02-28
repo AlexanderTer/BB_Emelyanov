@@ -14,6 +14,7 @@
  */
 float Trapezoidal_Integrator(Integrator_Struct *integrator, float x) {
 
+
 	// y[n] = s[n-1] + x[n]*k
 	float out = LIMIT(integrator->sum + integrator->k * x, integrator->sat.min,
 			integrator->sat.max);
@@ -22,18 +23,6 @@ float Trapezoidal_Integrator(Integrator_Struct *integrator, float x) {
 	integrator->sum = out + x * integrator->k;
 	return out;
 }
-
-//inline int32_t Trapezoidal_Integrator_Q(Integrator_Q_Struct * integrator, int32_t x)
-//{
-//    // out[n] = s[n-1] + x[n] * k.
-//    int32_t out = LIMIT(SUM_Q(integrator->sum, MUL_Q(x, integrator->k, Q_USE)), integrator->sat.min, integrator->sat.max);
-//
-//    // s[n] = out[n] + x[n] * k.
-//    integrator->sum = SUM_Q(out, MUL_Q(x, integrator->k, Q_USE));
-//
-//    return out;
-//}
-
 
 /**
  * \brief Функция дифференциатора методом Эйлера
@@ -70,14 +59,5 @@ float PID_Controller(PID_Controller_Struct *pid, float x) {
 	return LIMIT(out_p + out_i + out_d, pid->sat.min, pid->sat.max);
 }
 
-//inline int32_t PID_Controller_Q(PID_Controller_Q_Struct * pid, int32_t x)
-//{
-//    // Расчёт пропорциональной части.
-//    int32_t out_p = MUL_Q(x, pid->kp, Q_USE);
-//
-//    // Расчёт интегральной части.
-//    int32_t out_i = Trapezoidal_Integrator_Q(&pid->integrator, x);
-//
-//    return LIMIT(SUM_Q(out_p, out_i), pid->sat.min, pid->sat.max);
-//}
+
 
