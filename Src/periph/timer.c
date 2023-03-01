@@ -156,7 +156,7 @@ void init_timer(void)
 	//--- Триггер расчёта контура
 
 	// Запись делителя прерываний
-	HRTIM1->sTimerxRegs[4].REPxR = 9; // [Fsw 300 кГц / Fcalc 20 кГц] - 1 = 14 тактов
+	HRTIM1->sTimerxRegs[4].REPxR = 5; // [Fsw 300 кГц / Fcalc 50 кГц] - 1 = 5 тактов
 
 	// Включить прерывание по событию repetition
 	HRTIM1->sTimerxRegs[4].TIMxDIER |= HRTIM_TIMDIER_REPIE;
