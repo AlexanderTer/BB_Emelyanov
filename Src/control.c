@@ -26,7 +26,7 @@ Control_Struct BB_Control =
 						.k_boost = 64.903f * T_CALC,
 						.k_buck =  19.047f * T_CALC,
 						.k = 19.047f * T_CALC,
-						.sat = {.min = 0.f, .max = 1.f},
+						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
@@ -35,7 +35,7 @@ Control_Struct BB_Control =
 					.k =  4.1481e-07f * F_CALC,
 
 				},
-				.sat = {.min = 0.f, .max = 0.89f},
+				.sat = {.min = 0.f, .max = 2.f},
 		},
 
 		.pid_voltage =
@@ -131,8 +131,7 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	float iLref_b = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-	BB_Control.iL_ref = iLref_b +  BB_Measure.data.inj;
+	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
@@ -142,8 +141,8 @@ void HRTIM1_TIME_IRQHandler(void){
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  	BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  iLref_b*  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 = BB_Control.iL_ref * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 = BB_Control.iL_ref *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
