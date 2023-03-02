@@ -40,16 +40,16 @@ Control_Struct BB_Control =
 
 		.pid_voltage =
 		{
-				.kp_boost = 8.0126f,
+				.kp_boost =  1.2088f,
 				.kp_buck = 0.2724f,
-				.kp = 7.2080f,
+				.kp =     1.2088f,
 
 				.integrator =
 				{
-						.k_boost = 3.7819e+04f * T_CALC,
+						.k_boost = 5332.7f * T_CALC,
 						.k_buck =  2.9269e+04f * T_CALC,
-						.k =   2.6952e+04f * T_CALC,
-						.sat = {.min = 0, .max = 14.5f},
+						.k = 5332.7f * T_CALC,
+						.sat = {.min = 0, .max = 14.7f},
 				},
 
 				.diff =
@@ -59,7 +59,7 @@ Control_Struct BB_Control =
 					.k = 0.f * F_CALC,
 
 				},
-				.sat = {.min = 0, .max = 14.5f},
+				.sat = {.min = 0, .max = 14.7f},
 		},
 
 };
@@ -136,7 +136,6 @@ void HRTIM1_TIME_IRQHandler(void){
 
 
 	// ----- Расчёт контура тока ---------
-	BB_Control.iL_ref = 14.0f + BB_Measure.data.inj;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
 	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
@@ -144,7 +143,7 @@ void HRTIM1_TIME_IRQHandler(void){
 
 	// Вывод данных на ЦАП1 ЦАП2
 	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Measure.data.uout *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC2->DHR12R1 =  iLref_b*  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
