@@ -17,22 +17,22 @@ Control_Struct BB_Control =
 
 		.pid_current =
 		{
-				.kp_boost = 4.4095e-03f,
+				.kp_boost =  0.019318f,
 				.kp_buck =  3.5817e-03f,
-				.kp =  4.2901e-03f,
+				.kp = 0.019318f,
 
 				.integrator =
 				{
-						.k_boost = 6.2705f * T_CALC,
+						.k_boost = 64.903f * T_CALC,
 						.k_buck =  6.5929f * T_CALC,
-						.k = 6.1893f * T_CALC,
+						.k = 64.903f * T_CALC,
 						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
-					.k_boost =  7.2847e-07f * F_CALC,
+					.k_boost =  5.5716e-07f * F_CALC,
 					.k_buck = 4.4221e-07f * F_CALC,
-					.k =   6.8692e-07f * F_CALC,
+					.k =   5.5716e-07f * F_CALC,
 
 				},
 				.sat = {.min = 0.f, .max = 2.f},
@@ -136,7 +136,7 @@ void HRTIM1_TIME_IRQHandler(void){
 
 
 	// ----- Расчёт контура тока ---------
-	BB_Control.iL_ref = 12.5f;
+	BB_Control.iL_ref = 14.0f;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
 	float duty_b = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
