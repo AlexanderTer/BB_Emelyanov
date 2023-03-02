@@ -47,8 +47,7 @@ int main(void)
 				BB_State = BUCK;
 				BB_Control.pid_current.kp = BB_Control.pid_current.kp_buck;
 				BB_Control.pid_current.integrator.k = BB_Control.pid_current.integrator.k_buck;
-				BB_Control.pid_current.diff.k =
-				BB_Control.pid_current.diff.k_buck;
+				BB_Control.pid_current.diff.k = BB_Control.pid_current.diff.k_buck;
 
 				BB_Control.pid_voltage.kp = BB_Control.pid_voltage.kp_buck;
 				BB_Control.pid_voltage.integrator.k = BB_Control.pid_voltage.integrator.k_buck;
