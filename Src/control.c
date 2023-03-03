@@ -17,22 +17,22 @@ Control_Struct BB_Control =
 
 		.pid_current =
 		{
-				.kp_boost = 0.014924f,
+				.kp_boost = 5.5848e-03f,
 				.kp_buck =  3.5817e-03f,
-				.kp =   0.014924f,
+				.kp =   5.5848e-03f,
 
 				.integrator =
 				{
-						.k_boost = 48.068f * T_CALC,
+						.k_boost = 12.353f * T_CALC,
 						.k_buck =  6.5929f * T_CALC,
-						.k = 48.068f * T_CALC,
+						.k = 12.353f * T_CALC,
 						.sat = {.min = 0.f, .max = 2.f},
 				},
 				.diff =
 				{
-					.k_boost =  5.7641e-07f * F_CALC,
+					.k_boost = 6.1223e-07f * F_CALC,
 					.k_buck = 4.4221e-07f * F_CALC,
-					.k =   5.7641e-07f * F_CALC,
+					.k =  6.1223e-07f * F_CALC,
 
 				},
 				.sat = {.min = 0.f, .max = 2.f},
