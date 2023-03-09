@@ -4,7 +4,7 @@
 #include "dsp.h"
 #include "timer.h"
 #include <math.h>
-
+#define TRIG_KOEF  (0.5f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
 volatile uint32_t counterADC = 0;
 
 
@@ -69,14 +69,14 @@ Control_Struct BB_Control =
 Measure_Struct BB_Measure =
 {
 
-#define K_ADC (3.3 / 1024.)
+#define K_ADC (3.3f / 1024.f)
 		// ------ Смещение -----
 		.shift =
 		{
-				.iL = 0,
+				.iL = 0.f,
 				.uout = 12.1324f / K_ADC,
 				.inj = 0.f,
-				.uin = 0,
+				.uin = 0.f,
 		},
 
 		// ------ Множитель -----
@@ -84,14 +84,14 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.05f,
+				.inj =  K_ADC * 0.01f,
 				.uin =  K_ADC * 14.5f,
 		},
 
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 16.f,
+				.scale = 4095.f / 2.f,
 		},
 
 		.dac[1] =
@@ -107,11 +107,11 @@ Measure_Struct BB_Measure =
 Protect_Struct BB_Protect =
 {
 
-		.iL_max    = 18.,
-		.uin_max   = 42.,
-		.uin_min   = 7.5,
-		.uout_max  = 23.,
-		.power_max = 130.,
+		.iL_max    = 18.f,
+		.uin_max   = 42.f,
+		.uin_min   = 7.5f,
+		.uout_max  = 23.f,
+		.power_max = 130.f,
 
 };// end Protect_Struct BB_Protect -----------------------------------------
 
@@ -149,15 +149,16 @@ void HRTIM1_FLT_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
 
-	if (counterADC == 5)
+	if (counterADC == 4)
 	{
-		GPIOB->ODR |= (1 << 7);
+
 		// Выбор коэффициентов
 
 		// ----- Расчёт контура напряжения ---------
 		#define u_ref  (20.0f)
 
 		BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+
 		BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 
 		float error_voltage = u_ref - BB_Measure.data.uout;
@@ -166,14 +167,16 @@ void ADC1_2_IRQHandler(void)
 
 
 		// ----- Расчёт контура тока ---------
+		GPIOB->ODR |= (1 << 7);
 		BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
-		BB_Control.error_current = iL_ref - BB_Measure.data.iL;
-		BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+		float error_current = iL_ref - BB_Measure.data.iL;
+		BB_Control.duty = PID_Controller(&BB_Control.pid_current,error_current);
+		BB_Control.duty  = 1.6f + BB_Measure.data.inj;
 		// -----------------------------------
 
 		// Вывод данных на ЦАП1 ЦАП2
-		DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-		DAC2->DHR12R1 =  BB_Control.iL_ref *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+		DAC1->DHR12R2 =  BB_Control.duty  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+		DAC2->DHR12R1 =  BB_Measure.data.iL *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -183,8 +186,9 @@ void ADC1_2_IRQHandler(void)
 			{
 				set_Duty();
 			}
-		counterADC = 0;
 		GPIOB->ODR &= ~(1 << 7);
+		counterADC = 0;
+
 
 
 	}
@@ -309,10 +313,10 @@ inline void timer_PWM_off(void)
  */
 void set_Duty(void)
 {
-	#define TRIG_KOEF (0.5f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
+
 
 	float u = BB_Control.duty;
-u=0.8f;
+
 	if (u < U_MIN_BUCK)
 	{
 		// Отключить все выходы
@@ -394,7 +398,6 @@ u=0.8f;
 
 	// D compare
 	HRTIM1->sTimerxRegs[3].CMP1xR = HRTIM1->sTimerxRegs[3].PERxR * BB_Control.duty_Boost;
-	HRTIM1->sTimerxRegs[4].CMP2xR = (PERIOD);
 
 }
 

@@ -33,7 +33,6 @@ int main(void)
 
 	// Сконфигурировать датчик
 	//write_DS1722(0x80, 0xE0);
-	 set_Duty();
 	while (1)
 	{
 		/**

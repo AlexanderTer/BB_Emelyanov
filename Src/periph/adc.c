@@ -55,10 +55,10 @@ volatile void init_adc(void)
     ADC2->JSQR |= 5 << ADC_JSQR_JSQ1_Pos;                                   // CH IN5 - Inj
 
     // Устанавливаем длительность выборки в тактах АЦП:S
-    ADC1->SMPR1 |= (2 << ADC_SMPR1_SMP4_Pos);//  7.5 CLK
-    ADC1->SMPR2 |= (2 << ADC_SMPR2_SMP13_Pos);//  7.5 CLK
-    ADC2->SMPR1 |= (2 << ADC_SMPR1_SMP5_Pos); //  7.5 CLK
-    ADC2->SMPR2 |= (2 << ADC_SMPR2_SMP13_Pos); //  7.5 CLK
+    ADC1->SMPR1 |= (3 << ADC_SMPR1_SMP4_Pos);//  7.5 CLK
+    ADC1->SMPR2 |= (3 << ADC_SMPR2_SMP13_Pos);//  7.5 CLK
+    ADC2->SMPR1 |= (3 << ADC_SMPR1_SMP5_Pos); //  7.5 CLK
+    ADC2->SMPR2 |= (3 << ADC_SMPR2_SMP13_Pos); //  7.5 CLK
 
     // Разрешение 10 бит
     ADC1->CFGR |= (1 << ADC_CFGR_RES_Pos);
