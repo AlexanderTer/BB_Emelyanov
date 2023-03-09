@@ -18,7 +18,7 @@ void init_interrupt(void)
 	NVIC_SetPriority(HRTIM1_TIME_IRQn, 1);
 
 	// Разрешаем прерывание TE
-	NVIC_EnableIRQ(HRTIM1_TIME_IRQn);
+	//NVIC_EnableIRQ(HRTIM1_TIME_IRQn);
 
 
 	//	NVIC_EnableIRQ(COMP2_IRQn);

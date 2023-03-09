@@ -5,6 +5,7 @@
 #include "timer.h"
 #include <math.h>
 
+volatile uint32_t counterADC = 0;
 
 
 State BB_State = BUCK;
@@ -35,7 +36,7 @@ Control_Struct BB_Control =
 					.k =  6.1223e-07f * F_CALC,
 
 				},
-				.sat = {.min = 0.f, .max = 2.f},
+				.sat = {.min = 0.f, .max = 1.6f},
 		},
 
 		.pid_voltage =
@@ -68,7 +69,7 @@ Control_Struct BB_Control =
 Measure_Struct BB_Measure =
 {
 
-#define K_ADC (3.3 / 4096.)
+#define K_ADC (3.3 / 1024.)
 		// ------ Смещение -----
 		.shift =
 		{
@@ -121,43 +122,13 @@ Protect_Struct BB_Protect =
 
 void HRTIM1_TIME_IRQHandler(void){
 
-	GPIOB->ODR |= (1 << 7);
-
-	// Выбор коэффициентов
-
-	// ----- Расчёт контура напряжения ---------
-	BB_Control.uout_ref = 20.0f;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
-	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
-
-	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
-
-	// ----- Расчёт контура тока ---------
-	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
-	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
-	// -----------------------------------
-
-	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Control.iL_ref *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
-
-
-
-
-	// Применение рачётного коэффициента заполнения к модулятору
-	if (BB_State != FAULT)
-		{
-			set_Duty();
-		}
 
 	// Сброс флага прерывания
 	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
 
-	GPIOB->ODR &= ~(1 << 7);
+
 }
 
 /**
@@ -178,18 +149,62 @@ void HRTIM1_FLT_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
 
+	if (counterADC == 5)
+	{
+		GPIOB->ODR |= (1 << 7);
+		// Выбор коэффициентов
+
+		// ----- Расчёт контура напряжения ---------
+		#define u_ref  (20.0f)
+
+		BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+		BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
+
+		float error_voltage = u_ref - BB_Measure.data.uout;
+		float iL_ref = PID_Controller(&BB_Control.pid_voltage,error_voltage);
+
+
+
+		// ----- Расчёт контура тока ---------
+		BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
+		BB_Control.error_current = iL_ref - BB_Measure.data.iL;
+		BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+		// -----------------------------------
+
+		// Вывод данных на ЦАП1 ЦАП2
+		DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+		DAC2->DHR12R1 =  BB_Control.iL_ref *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+
+
+
+
+		// Применение рачётного коэффициента заполнения к модулятору
+		if (BB_State != FAULT)
+			{
+				set_Duty();
+			}
+		counterADC = 0;
+		GPIOB->ODR &= ~(1 << 7);
+
+
+	}
+
+
+	// Обработка преобразований ацп
+	//ADC_Data_Hanler();
+
+	// Проверка программных защит
+	//software_protection_monitor();
 
 	// Установка смещения inj по нажатию кнопки
 	set_shifts();
 
-	// Обработка преобразований ацп
-	ADC_Data_Hanler();
-
-	// Проверка программных защит
-	software_protection_monitor();
+	counterADC++;
 
 	// Cбрасываем флаг прерывания
-    ADC1->ISR |= ADC_ISR_JEOS;
+
+    ADC2->ISR |= ADC_ISR_JEOS;
+
 
 
 }
@@ -294,10 +309,10 @@ inline void timer_PWM_off(void)
  */
 void set_Duty(void)
 {
-	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
+	#define TRIG_KOEF (0.5f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
 
 	float u = BB_Control.duty;
-
+u=0.8f;
 	if (u < U_MIN_BUCK)
 	{
 		// Отключить все выходы
@@ -321,7 +336,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = 1.f; // D1 в 1
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF * BB_Control.duty_Buck);
 	}
 	else if (u < 1)
 	{
@@ -332,7 +347,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = DUTY_MIN_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF * BB_Control.duty_Buck);
 	}
 	else if (u < U_MIN_BOOST)
 	{
@@ -357,7 +372,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = u - 1.0f;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (PERIOD * TRIG_KOEF * BB_Control.duty_Boost);
 	}
 	else  //  (u >= U_MAX_BOOST)
 	{
@@ -371,7 +386,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = DUTY_MAX_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (PERIOD * TRIG_KOEF * BB_Control.duty_Boost);
 	}
 
 	// E compare
@@ -379,6 +394,7 @@ void set_Duty(void)
 
 	// D compare
 	HRTIM1->sTimerxRegs[3].CMP1xR = HRTIM1->sTimerxRegs[3].PERxR * BB_Control.duty_Boost;
+	HRTIM1->sTimerxRegs[4].CMP2xR = (PERIOD);
 
 }
 

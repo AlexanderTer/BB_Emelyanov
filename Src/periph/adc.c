@@ -4,7 +4,7 @@
 /**
  *\brief Инициализация АЦП
  */
-void init_adc(void)
+volatile void init_adc(void)
 {
 	// Включить тактирование АЦП
 	RCC->AHBENR |= RCC_AHBENR_ADC12EN;
@@ -31,6 +31,9 @@ void init_adc(void)
 	i = 0;
 	while ((ADC2->CR & ADC_CR_ADCAL) || i > 10000 )  i++;
 
+
+
+
 	// Выбор для старта преобразования внешний триггер
 	ADC1->CFGR |= ADC_CFGR_EXTEN_0;
 	ADC2->CFGR |= ADC_CFGR_EXTEN_0;
@@ -51,19 +54,18 @@ void init_adc(void)
     ADC1->JSQR |= 13 << ADC_JSQR_JSQ1_Pos;                                   // CH IN13 - Vin
     ADC2->JSQR |= 5 << ADC_JSQR_JSQ1_Pos;                                   // CH IN5 - Inj
 
+    // Устанавливаем длительность выборки в тактах АЦП:S
+    ADC1->SMPR1 |= (2 << ADC_SMPR1_SMP4_Pos);//  7.5 CLK
+    ADC1->SMPR2 |= (2 << ADC_SMPR2_SMP13_Pos);//  7.5 CLK
+    ADC2->SMPR1 |= (2 << ADC_SMPR1_SMP5_Pos); //  7.5 CLK
+    ADC2->SMPR2 |= (2 << ADC_SMPR2_SMP13_Pos); //  7.5 CLK
 
-	// Количество преобразований после получения триггера выборки
-	//ADC1->SQR1 = 0; 			// 1 Преобразование регулярного канала
-    //ADC1->JSQR = 0; 			// 1 Преобразование инжектированного канала
-    //ADC2->SQR1 = 0; 			// 1 Преобразование регулярного канала
-    //ADC2->JSQR = 0;			    // 1 Преобразование инжектированного канала
-
-	// Устанавливаем длительность выборки в тактах АЦП:S
-	ADC1->SMPR1 |= (4 << ADC_SMPR1_SMP1_Pos)|(4 << ADC_SMPR1_SMP2_Pos); //  19.5 CLK
-	ADC2->SMPR1 |= (4 << ADC_SMPR1_SMP1_Pos)|(4 << ADC_SMPR1_SMP2_Pos); //  19.5 CLK
+    // Разрешение 10 бит
+    ADC1->CFGR |= (1 << ADC_CFGR_RES_Pos);
+    ADC2->CFGR |= (1 << ADC_CFGR_RES_Pos);
 
     // Включение прерывания после окончания группы преобразований
-    ADC1->IER |= ADC_IER_JEOSIE;
+    ADC2->IER |= ADC_IER_JEOCIE;
 
 	// Включение внутреннего ИОН
 	ADC12_COMMON->CCR |= ADC_CCR_VREFEN;
