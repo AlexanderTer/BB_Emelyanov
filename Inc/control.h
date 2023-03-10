@@ -48,7 +48,7 @@ typedef struct
 	struct
 	{
 		float iL;
-		float uout;
+	volatile	float uout;
 		float inj;
 		float uin;
 		float power;
@@ -62,9 +62,9 @@ typedef struct
 
 	struct
 	{
-		float data;			// Значение переменной для вывода на ЦАП
-		float shift;		// Смещение значения переменной
-		float scale;		// Коэффициент масштабирования переменной
+		volatile	float data;			// Значение переменной для вывода на ЦАП
+		volatile	float shift;		// Смещение значения переменной
+		volatile	float scale;		// Коэффициент масштабирования переменной
 
 	} dac[2]; // Структура с параметрами ЦАП1 и ЦАП2
 
