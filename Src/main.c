@@ -18,7 +18,7 @@ extern float u_max_buck;
 extern float u_min_boost;
 extern float u_center;
 
-inline volatile void updating_coefficients(void);
+volatile void updating_coefficients(void);
 
 int main(void)
 {
@@ -38,6 +38,7 @@ int main(void)
 
 
 
+
 	}
 
 }
@@ -45,7 +46,7 @@ int main(void)
 /**
 * Переключатель коэффициентов Buck <-> Boost
 */
-inline volatile void updating_coefficients(void)
+volatile void updating_coefficients(void)
 {
 	if (BB_State != FAULT)
 	{

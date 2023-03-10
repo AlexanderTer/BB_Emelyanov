@@ -162,6 +162,30 @@ void init_timer(void)
 	HRTIM1->sTimerxRegs[4].TIMxDIER |= HRTIM_TIMDIER_REPIE;
 
 
+	//--- Burst Mode
+
+	// Выбор источника тактирования - Timer E
+	HRTIM1->sCommonRegs.BMCR |= 0x5 << HRTIM_BMCR_BMCLK_Pos;
+
+	// Режим непрерывной работы;
+	HRTIM1->sCommonRegs.BMCR |= HRTIM_BMCR_BMOM;
+
+	// Отключение в пакетном режиме
+	HRTIM1->sTimerxRegs[4].OUTxR |= HRTIM_OUTR_IDLM2 | HRTIM_OUTR_IDLM1;
+	//HRTIM1->sTimerxRegs[3].OUTxR |= HRTIM_OUTR_IDLM2 | HRTIM_OUTR_IDLM1;
+
+	// Количество периодов в режиме ожидания
+	HRTIM1->sCommonRegs.BMCMPR |= 10;
+
+	// Общий период режима
+	HRTIM1->sCommonRegs.BMPER |= 100;
+
+	// Разрешение работы
+	HRTIM1->sCommonRegs.BMCR |= HRTIM_BMCR_BME;
+
+	// Програмный запуск (запись 1 приведёт к старту режима)
+	HRTIM1->sCommonRegs.BMTRGR &= ~HRTIM_BMTRGR_SW;
+
 	// Включение счёта
 	HRTIM1->sMasterRegs.MCR |= HRTIM_MCR_MCEN | HRTIM_MCR_TECEN | HRTIM_MCR_TDCEN;
 }

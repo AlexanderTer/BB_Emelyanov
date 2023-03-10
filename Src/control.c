@@ -209,15 +209,24 @@ void ADC1_2_IRQHandler(void)
  */
 void ADC_Data_Hanler(void)
 {
+
+	#define LEVEL_CURRENT_BURST_MODE 0.4f
+
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 	BB_Measure.data.uin = BB_Measure.scale.uin * ADC1->JDR1 + BB_Measure.shift.uin;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR + BB_Measure.shift.iL;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+	//BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 
-
-	// Вычисление мощности
-	//if (BB_Control.duty_Boost > DUTY_MIN_BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - BB_Control.duty_Boost);
+	if (BB_Measure.data.iL < LEVEL_CURRENT_BURST_MODE)
+	{
+		//HRTIM1->sCommonRegs.BMTRGR |= HRTIM_BMTRGR_SW;
+	}
+	else HRTIM1->sCommonRegs.BMTRGR &= ~HRTIM_BMTRGR_SW;
+//	// Вычисление мощности
+//	if (BB_State == BOOST) BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout * ( 1 - BB_Control.duty_Boost);
 //	else BB_Measure.data.power = BB_Measure.data.iL * BB_Measure.data.uout;
+
+
 
 
 }
@@ -281,8 +290,8 @@ inline void timer_PWM_off(void)
  */
 void set_Duty(void)
 {
-	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
-
+	#define TRIG_KOEF_BOOST (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
+	#define TRIG_KOEF_BUCK (0.9f)
 	float u = BB_Control.duty;
 
 	if (u < U_MIN_BUCK)
@@ -294,7 +303,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = 0.f;
 
 		// Триггер выборки на половине периода
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF_BUCK);
 	}
 	else if (u < u_max_buck)
 	{
@@ -310,7 +319,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = 1.f; // D1 в 1
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF_BUCK);
 	}
 	else if (u < u_center)
 	{
@@ -325,7 +334,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = DUTY_MIN_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Buck
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF_BUCK);
 	}
 	else if (u < u_min_boost)
 	{
@@ -340,7 +349,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = 1.f - DUTY_MAX_BUCK * (2.f - u);
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Buck * TRIG_KOEF_BUCK);
 	}
 	else if (u < U_MAX_BOOST)
 	{
@@ -355,7 +364,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = u - 1.0f;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF_BOOST);
 	}
 	else  //  (u >= U_MAX_BOOST)
 	{
@@ -369,7 +378,7 @@ void set_Duty(void)
 		BB_Control.duty_Boost = DUTY_MAX_BOOST;
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Boost * TRIG_KOEF_BOOST);
 	}
 
 	// E compare
