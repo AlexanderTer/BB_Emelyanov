@@ -83,7 +83,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL =   K_ADC * 5.0505f,
 				.uout = K_ADC * 1.4749f,
-				.inj =  K_ADC * 0.05f,
+				.inj =  K_ADC * 0.1f,
 				.uin =  K_ADC * 14.5f,
 		},
 
@@ -131,19 +131,20 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	BB_Control.iL_ref  = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 
 	// ----- Расчёт контура тока ---------
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR;
 	BB_Control.error_current = BB_Control.iL_ref - BB_Measure.data.iL;
-	BB_Control.duty = PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+	BB_Control.duty =  PID_Controller(&BB_Control.pid_current,BB_Control.error_current);
+
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.iL_ref  * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  BB_Control.iL_ref *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	//DAC1->DHR12R2 =  BB_Control.iL_ref   * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	//DAC2->DHR12R1 =  il_ref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -236,8 +237,8 @@ void software_protection_monitor(void)
 
 	if (BB_Measure.data.uin > BB_Protect.uin_max)
 	{
-		BB_State = FAULT;
-		timer_PWM_off();
+	//	BB_State = FAULT;
+	//	timer_PWM_off();
 		GPIOC->ODR |= (1 << 12);
 	}
 	//else GPIOC->ODR &= ~(1 << 12);
