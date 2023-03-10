@@ -8,6 +8,7 @@
 float u_max_buck = U_MAX_BUCK;
 float u_min_boost = U_MIN_BOOST;
 float u_center = U_CENTER;
+
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -232,7 +233,6 @@ void software_protection_monitor(void)
 			timer_PWM_off();
 			GPIOC->ODR |= (1 << 10);
 		}
-//	else GPIOC->ODR &= ~(1 << 10);
 
 	if (BB_Measure.data.uout > BB_Protect.uout_max)
 	{
@@ -240,27 +240,6 @@ void software_protection_monitor(void)
 		timer_PWM_off();
 		GPIOC->ODR |= (1 << 11);
 	}
-	//else GPIOC->ODR &= ~(1 << 11);
-
-	if (BB_Measure.data.uin > BB_Protect.uin_max)
-	{
-	//	BB_State = FAULT;
-	//	timer_PWM_off();
-		GPIOC->ODR |= (1 << 12);
-	}
-	//else GPIOC->ODR &= ~(1 << 12);
-
-	//if (BB_Measure.data.uin < BB_Protect.uin_min) GPIOC->ODR |= (1 << 12);
-	//else GPIOC->ODR &= ~(1 << 12);
-
-
-//	if (BB_Measure.data.power > BB_Protect.power_max)
-//		{
-//		 	BB_State = FAULT;
-//			timer_PWM_off();
-//			GPIOB->ODR |= (1 << 7);
-//		}
-	//else GPIOB->ODR &= ~(1 << 7);
 
 }
 
@@ -304,7 +283,6 @@ void set_Duty(void)
 {
 	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
 
-
 	float u = BB_Control.duty;
 
 	if (u < U_MIN_BUCK)
@@ -339,6 +317,7 @@ void set_Duty(void)
 		GPIOB->ODR |= (1 << 7);
 		u_max_buck = U_MAX_BUCK_HYST;
 		u_center = U_CENTER_HYST_BOOST;
+
 		// Включить все таймеры
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
@@ -353,6 +332,7 @@ void set_Duty(void)
 		GPIOB->ODR &= ~(1 << 7);
 		u_center = U_CENTER;
 		u_min_boost = U_MIN_BOOST_HYST;
+
 		// Включить все таймеры
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
