@@ -5,8 +5,9 @@
 #include "timer.h"
 #include <math.h>
 
-
-
+float u_max_buck = U_MAX_BUCK;
+float u_min_boost = U_MIN_BOOST;
+float u_center = U_CENTER;
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -18,12 +19,14 @@ Control_Struct BB_Control =
 		.pid_current =
 		{
 				.kp_boost = 5.5848e-03f,
+				.kp_bb =  6.6164e-03f,
 				.kp_buck =  6.6164e-03f,
 				.kp =   5.5848e-03f,
 
 				.integrator =
 				{
 						.k_boost = 12.353f * T_CALC,
+						.k_bb =   19.047f * T_CALC,
 						.k_buck =  19.047f * T_CALC,
 						.k = 12.353f * T_CALC,
 						.sat = {.min = 0.f, .max = 2.f},
@@ -31,6 +34,7 @@ Control_Struct BB_Control =
 				.diff =
 				{
 					.k_boost = 6.1223e-07f * F_CALC,
+					.k_bb = 4.1481e-07f * F_CALC,
 					.k_buck = 4.1481e-07f * F_CALC,
 					.k =  6.1223e-07f * F_CALC,
 
@@ -41,12 +45,14 @@ Control_Struct BB_Control =
 		.pid_voltage =
 		{
 				.kp_boost = 1.2088f,
+				.kp_bb = 0.7068f,
 				.kp_buck = 0.7068f,
 				.kp = 1.2088f,
 
 				.integrator =
 				{
 						.k_boost = 5322.7f * T_CALC,
+						.k_bb =  4.0959e+04f * T_CALC,
 						.k_buck =  4.0959e+04f * T_CALC,
 						.k =   5322.7f * T_CALC,
 						.sat = {.min = 0, .max = 14.8f},
@@ -55,6 +61,7 @@ Control_Struct BB_Control =
 				.diff =
 				{
 					.k_boost = 0.f * F_CALC,
+					.k_bb= 0.f * F_CALC,
 					.k_buck = 0.f * F_CALC,
 					.k = 0.f * F_CALC,
 
@@ -74,7 +81,7 @@ Measure_Struct BB_Measure =
 		{
 				.iL = 0,
 				.uout = 12.1324f / K_ADC,
-				.inj = 0.f,
+				.inj = -0.160491273f,
 				.uin = 0,
 		},
 
@@ -90,13 +97,13 @@ Measure_Struct BB_Measure =
 		.dac[0] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 16.f,
+				.scale = 4095.f / 7.f,
 		},
 
 		.dac[1] =
 		{
 				.shift = 0.f,
-				.scale = 4095.f / 16.f,
+				.scale = 4095.f / 7.f,
 		},
 
 };// end Measure_Struct BB_Measure ------------------------------------------
@@ -121,7 +128,7 @@ Protect_Struct BB_Protect =
 
 void HRTIM1_TIME_IRQHandler(void){
 
-	GPIOB->ODR |= (1 << 7);
+
 
 	// Выбор коэффициентов
 
@@ -131,8 +138,8 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	BB_Control.iL_ref  = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-
+	float il_ref_b  = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
+	BB_Control.iL_ref = il_ref_b + BB_Measure.data.inj;
 
 
 	// ----- Расчёт контура тока ---------
@@ -143,8 +150,8 @@ void HRTIM1_TIME_IRQHandler(void){
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	//DAC1->DHR12R2 =  BB_Control.iL_ref   * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	//DAC2->DHR12R1 =  il_ref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+	DAC1->DHR12R2 =  BB_Control.iL_ref   * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	DAC2->DHR12R1 =  il_ref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -158,7 +165,7 @@ void HRTIM1_TIME_IRQHandler(void){
 	// Сброс флага прерывания
 	HRTIM1->sTimerxRegs[4].TIMxICR |= HRTIM_TIMICR_REPC;
 
-	GPIOB->ODR &= ~(1 << 7);
+
 }
 
 /**
@@ -297,6 +304,7 @@ void set_Duty(void)
 {
 	#define TRIG_KOEF (0.7f)		 // Положение триггера выборки от коэф заполнения (по осцилограмме 0.7 - середина открытого состояния ключа)
 
+
 	float u = BB_Control.duty;
 
 	if (u < U_MIN_BUCK)
@@ -310,8 +318,10 @@ void set_Duty(void)
 		// Триггер выборки на половине периода
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * TRIG_KOEF);
 	}
-	else if (u < U_MAX_BUCK)
+	else if (u < u_max_buck)
 	{
+		GPIOB->ODR &= ~(1 << 7);
+		u_max_buck = U_MAX_BUCK;
 		// Включить E1 E2 D1
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN;
 
@@ -324,8 +334,11 @@ void set_Duty(void)
 		// Триггер выборки в половине коэффициента заполнения Buck
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
 	}
-	else if (u < 1)
+	else if (u < u_center)
 	{
+		GPIOB->ODR |= (1 << 7);
+		u_max_buck = U_MAX_BUCK_HYST;
+		u_center = U_CENTER_HYST_BOOST;
 		// Включить все таймеры
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
@@ -335,8 +348,11 @@ void set_Duty(void)
 		// Триггер выборки в половине коэффициента заполнения Buck
 		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t) (PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
 	}
-	else if (u < U_MIN_BOOST)
+	else if (u < u_min_boost)
 	{
+		GPIOB->ODR &= ~(1 << 7);
+		u_center = U_CENTER;
+		u_min_boost = U_MIN_BOOST_HYST;
 		// Включить все таймеры
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE1OEN | HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
@@ -344,10 +360,11 @@ void set_Duty(void)
 		BB_Control.duty_Boost = 1.f - DUTY_MAX_BUCK * (2.f - u);
 
 		// Триггер выборки в половине коэффициента заполнения Boost
-		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Boost * TRIG_KOEF);
+		HRTIM1->sTimerxRegs[4].CMP2xR = (uint32_t)(PERIOD * BB_Control.duty_Buck * TRIG_KOEF);
 	}
 	else if (u < U_MAX_BOOST)
 	{
+		u_min_boost = U_MIN_BOOST;
 		// Включить E2 D1 D2
 		HRTIM1->sCommonRegs.OENR |= HRTIM_OENR_TE2OEN | HRTIM_OENR_TD1OEN | HRTIM_OENR_TD2OEN;
 
