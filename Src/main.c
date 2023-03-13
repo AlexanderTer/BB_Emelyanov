@@ -14,10 +14,12 @@
 
 uint32_t TEMPERATURE;
 
+// Переменные для обеспечения гистерезиса
 extern float u_max_buck;
 extern float u_min_boost;
 extern float u_center;
 
+// Функция обновления набора коэффициентов
 inline volatile void updating_coefficients(void);
 
 int main(void)
@@ -35,8 +37,6 @@ int main(void)
 	while (1)
 	{
 		updating_coefficients();
-
-
 
 	}
 

@@ -5,10 +5,12 @@
 #include "timer.h"
 #include <math.h>
 
+// Переменные для обеспечения гистерезиса
 float u_max_buck = U_MAX_BUCK;
 float u_min_boost = U_MIN_BOOST;
 float u_center = U_CENTER;
 
+// Начальное состояние - понижающий
 State BB_State = BUCK;
 
 // ---------------- Реализация структуры процесса регулирования ----------------
@@ -139,8 +141,7 @@ void HRTIM1_TIME_IRQHandler(void){
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
 
 	BB_Control.error_voltage = BB_Control.uout_ref - BB_Measure.data.uout;
-	float il_ref_b  = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
-	BB_Control.iL_ref = il_ref_b + BB_Measure.data.inj;
+	BB_Control.iL_ref = PID_Controller(&BB_Control.pid_voltage,BB_Control.error_voltage);
 
 
 	// ----- Расчёт контура тока ---------
@@ -151,8 +152,8 @@ void HRTIM1_TIME_IRQHandler(void){
 	// -----------------------------------
 
 	// Вывод данных на ЦАП1 ЦАП2
-	DAC1->DHR12R2 =  BB_Control.iL_ref   * BB_Measure.dac[0].scale; // DAC1 CH2  X16
-	DAC2->DHR12R1 =  il_ref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
+//	DAC1->DHR12R2 =  BB_Control.iL_ref   * BB_Measure.dac[0].scale; // DAC1 CH2  X16
+	//DAC2->DHR12R1 =  il_ref_b *  BB_Measure.dac[1].scale; // DAC2 CH1  X17
 
 
 
@@ -210,9 +211,9 @@ void ADC1_2_IRQHandler(void)
 void ADC_Data_Hanler(void)
 {
 	BB_Measure.data.uout = BB_Measure.scale.uout * (ADC1->DR + BB_Measure.shift.uout);
-	BB_Measure.data.uin = BB_Measure.scale.uin * ADC1->JDR1 + BB_Measure.shift.uin;
+	//BB_Measure.data.uin = BB_Measure.scale.uin * ADC1->JDR1 + BB_Measure.shift.uin;
 	BB_Measure.data.iL = BB_Measure.scale.iL * ADC2->DR + BB_Measure.shift.iL;
-	BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
+	//BB_Measure.data.inj = BB_Measure.scale.inj * ADC2->JDR1 + BB_Measure.shift.inj;
 
 
 	// Вычисление мощности
@@ -228,11 +229,11 @@ void ADC_Data_Hanler(void)
 void software_protection_monitor(void)
 {
 	if (BB_Measure.data.iL > BB_Protect.iL_max)
-		{
+	{
 			BB_State = FAULT;
 			timer_PWM_off();
 			GPIOC->ODR |= (1 << 10);
-		}
+	}
 
 	if (BB_Measure.data.uout > BB_Protect.uout_max)
 	{
